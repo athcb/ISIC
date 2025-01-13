@@ -8,10 +8,11 @@ import os
 import h5py
 import numpy as np
 from collections import Counter
-from sklearn.model_selection import train_test_split, RandomizedSearchCV, KFold
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, KFold, StratifiedKFold
 from sklearn.metrics import  make_scorer, log_loss, classification_report, precision_score, recall_score
-from scipy.stats import loguniform
+from scipy.stats import loguniform, rv_continuous
 import tensorflow as tf
+import time
 from tensorflow.python.data.experimental.ops.distribute import batch_sizes_for_worker
 
 print(tf.__version__)
@@ -28,31 +29,44 @@ policy = mixed_precision.Policy('mixed_float16')
 mixed_precision.set_global_policy(policy)
 
 image_directory = "../ISIC_data/ISIC_2020_Training_JPEG/train"
-metadata_directory = "../ISIC_data/ISIC_2020_Training_GroundTruth_v2.csv"
+metadata_path = "../ISIC_data/ISIC_2020_Training_GroundTruth_v2.csv"
 
-metadata = pd.read_csv(metadata_directory)
-print(metadata.columns)
-print(metadata.benign_malignant.value_counts(normalize=True))
+def create_train_val_list(metadata_path):
 
-metadata["image_path"] = image_directory + "/"  + metadata['image_name'] + '.jpg'
-train_files, val_files = train_test_split(metadata[["image_path", "target"]], test_size = 0.2, shuffle=True, random_state = 10, stratify=metadata["target"])
+    metadata = pd.read_csv(metadata_path)
+    print("Rations of benign vs malignant samples:")
+    print(metadata.benign_malignant.value_counts(normalize=True))
 
-num_samples = len(train_files)
-print(f"Number of train images: {num_samples}")
-print(f"Number of val images: {len(val_files)}")
-pd.DataFrame({"image_path": train_files["image_path"], "label": train_files["target"]}).to_csv("train.csv", index=False)
-pd.DataFrame({"image_path": val_files["image_path"], "label": val_files["target"]}).to_csv("val.csv", index=False)
+    # create image_path column that points to local directory
+    metadata["image_path"] = image_directory + "/"  + metadata['image_name'] + '.jpg'
 
-print("Images per class in training set (ratios and total number):")
-train_paths = pd.read_csv("train.csv")
-print(train_paths.label.value_counts(normalize=True))
-print(train_paths.label.value_counts())
+    # perform stratified train / val split on the image paths based on the target column
+    train_files, val_files = train_test_split(metadata[["image_path", "target"]],
+                                              test_size = 0.2,
+                                              shuffle=True,
+                                              random_state = 10,
+                                              stratify=metadata["target"])
 
-print("Images per class in val set (ratios and total number):")
-val_paths = pd.read_csv("val.csv")
-print(val_paths.label.value_counts(normalize=True))
-print(val_paths.label.value_counts())
+    num_train_samples = len(train_files)
+    num_val_samples = len(val_files)
+    print(f"Number of train images: {num_train_samples}")
+    print(f"Number of val images: {num_val_samples}")
 
+    # create csv files with train and validation image file paths
+    pd.DataFrame({"image_path": train_files["image_path"], "label": train_files["target"]}).to_csv("train.csv", index=False)
+    pd.DataFrame({"image_path": val_files["image_path"], "label": val_files["target"]}).to_csv("val.csv", index=False)
+
+    print("Images per class in training set (ratios and total number):")
+    train_paths = pd.read_csv("train.csv")
+    print(train_paths.label.value_counts(normalize=True))
+    print(train_paths.label.value_counts())
+
+    print("Images per class in val set (ratios and total number):")
+    val_paths = pd.read_csv("val.csv")
+    print(val_paths.label.value_counts(normalize=True))
+    print(val_paths.label.value_counts())
+
+    return train_paths, val_paths
 
 
 def load_metadata():
@@ -228,31 +242,32 @@ def design_model_conv(img_size, num_channels,
 
     return model
 
-def save_randomized_search_results(grid_result, output_search_best_params):
+def save_randomized_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model, train_scores_best_model,
+                                   output_best_params, output_mean_scores, output_val_scores, output_train_scores):
 
-    best_params_df = pd.DataFrame([grid_result.best_params_])
-    best_score = grid_result.best_score_
-    best_precision = grid_result.cv_results_['mean_test_precision'][grid_result.best_index_]  # Precision score
-    best_recall = grid_result.cv_results_['mean_test_recall'][grid_result.best_index_]  # Recall score
-
-    best_params_df["best_score"] = best_score
-    best_params_df["best_precision"] = best_precision
-    best_params_df["best_recall"] = best_recall
+    best_params_df = pd.DataFrame([best_params])
+    mean_scores_best_model_df = pd.DataFrame([mean_scores_best_model])
+    val_scores_best_model_df = pd.DataFrame(val_scores_best_model)
+    train_scores_best_model_df = pd.DataFrame(train_scores_best_model)
 
     print("Best params DF: ")
     print(best_params_df)
-    best_params_df.to_csv(output_search_best_params, index=False)
+
+    best_params_df.to_csv(output_best_params, index=False)
+    mean_scores_best_model_df.to_csv(output_mean_scores, index=False)
+    val_scores_best_model_df.to_csv(output_val_scores, index=False)
+    train_scores_best_model_df.to_csv(output_train_scores, index=False)
 
 def fit_model(model, train_dataset, validation_dataset, num_epochs, weight_positive, callbacks, verbose):
 
     class_weight = {0: 1.0, 1: weight_positive}
 
     history = model.fit(train_dataset,
-                        steps_per_epoch=train_dataset.cardinality().numpy(),  #inefficient?
+                        steps_per_epoch=train_dataset.cardinality().numpy(),  # faster than len()
                         #steps_per_epoch=len(train_dataset),
                         epochs=num_epochs,
                         validation_data=validation_dataset,
-                        validation_steps=validation_dataset.cardinality().numpy(),
+                        validation_steps=validation_dataset.cardinality().numpy(),  # faster than len()
                         #validation_steps= len(validation_dataset),
                         class_weight=class_weight,
                         callbacks = callbacks,
@@ -347,7 +362,7 @@ param_grid = {"img_size": [224],
               "weight_positive": [20, 30, 40], # weight for the minority (positive) class in case of imbalanced datasets
               }
 
-def custom_randomised_search(train_dataset, param_grid, num_iter, cvfolds, batch_size, train_paths):
+def custom_randomised_search(train_paths, param_grid, num_iter, cvfolds, batch_size):
 
     # define number of folds to split the training dataset
     skf = StratifiedKFold(n_splits = cvfolds, shuffle = True, random_state = 11)
@@ -356,12 +371,25 @@ def custom_randomised_search(train_dataset, param_grid, num_iter, cvfolds, batch
     best_score = float("inf")
     best_model = None
     val_scores_best_model = {}
+    train_scores_best_model = {}
     mean_scores_best_model = {}
     best_params = {}
 
 
     for _ in range(num_iter):
-        params = {key: np.random.choice(values) for key, values in param_grid.items()}
+        params = {}
+        for key, values in param_grid.items():
+            print(key, values)
+            print(type(values))
+            print( isinstance(values, loguniform))
+            if isinstance(values, rv_continuous_frozen):
+                print("i am here")
+                params[key] = values.rvs() # random sample from distribution
+            elif isinstance(values[0], list):
+                params[key] = values[np.random.randint(len(values))] # randomly select a list from within the list
+            else:
+                params[key] = np.random.choice(values)  # randomly select a value from the list
+
         print("Params in testing: ", params)
 
         fold_scores_val = {"loss": [],
@@ -388,15 +416,20 @@ def custom_randomised_search(train_dataset, param_grid, num_iter, cvfolds, batch
         for i, (train_index, val_index) in enumerate(skf.split(range_train_labels, train_labels)):
             print(f"Fold {i} for params: {params}")
 
-            train_index_tensor = tf.constant(train_index)
-            val_index_tensor = tf.constant(val_index)
+            file_paths_train = train_paths["image_paths"][train_index].to_numpy()
+            labels_train = train_paths["labels"][train_index].to_numpy()
 
-            train_data = train_dataset.enumerate().filter(lambda idx, _: tf.reduce_any(tf.equal((idx, train_index_tensor)))).map(lambda _, data: data)
-            val_data = train_dataset.enumerate().filter(lambda idx, _: tf.reduce_any(tf.equal((idx, val_index_tensor)))).map(lambda _, data: data)
+            file_paths_val = train_paths["image_paths"][val_index].to_numpy()
+            labels_val = train_paths["labels"][val_index].to_numpy()
 
+            print("test 1")
+            train_data = create_train_val_datasets(file_paths_train, labels_train, batch_size, training=True)
+            val_data = create_train_val_datasets(file_paths_val, labels_val, batch_size, training=True)
+
+            print("test 2")
             train_data = train_data.batch(batch_size)
             val_data   = val_data.batch(batch_size)
-
+            print("test 3")
             early_stop = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=5)
 
             model = design_model_conv(img_size = params["img_size"],
@@ -418,11 +451,14 @@ def custom_randomised_search(train_dataset, param_grid, num_iter, cvfolds, batch
                                   activation_output = params["activation_output"],
                                   learning_rate = params["learning_rate"])
             # question: the train_dataset was already batched. Is the new train_data also automatically batched? in the fit_model function the steps per epoch and validation steps are computed from the cardinality of the dataset. is that still correct?
+            print("test 4")
             model, history = fit_model(model, train_data, val_data, params["num_epochs"], params["weight_positive"], callbacks = [early_stop], verbose=1)
-
+            print("test 5")
             # Calculate scores on validation set (and on training set for comparison)
             train_loss, train_f1_score, train_precision, train_recall, train_auc = model.evaluate(train_data)
+            print("test 6")
             val_loss, val_f1_score, val_precision, val_recall, val_auc = model.evaluate(val_data)
+            print("test 7")
 
             print(f"Results on validation set for fold {i}:" )
             print("Loss: ", val_loss, "F1 score: ", val_f1_score, "Precision: ", val_precision, "Recall: ", val_recall, "AUC: ", val_auc)
@@ -469,31 +505,39 @@ def custom_randomised_search(train_dataset, param_grid, num_iter, cvfolds, batch
     print(f"Best params found: {params}")
     return best_model,  best_params, mean_scores_best_model, val_scores_best_model, train_scores_best_model
 
+# create dataframes with the local paths to training and validation images and labels
+train_paths, val_paths = create_train_val_list(metadata_path)
 
-train_dataset = create_train_val_datasets(train_paths.image_path.tolist(),
-                                          train_paths.label.tolist(),
+train_dataset = create_train_val_datasets(file_paths = train_paths["image_path"].to_numpy(), # access the paths to training images from train_paths df
+                                          labels = train_paths["label"].to_numpy(), # access the paths to labels of training images from train_paths df
                                           batch_size=16,
-                                          training=True)
-val_dataset = create_train_val_datasets(val_paths.image_path.tolist(),
-                                        val_paths.label.tolist(),
+                                          training=True # set to True for training set
+                                          )
+
+val_dataset = create_train_val_datasets(file_paths = val_paths["image_path"].to_numpy(), # access the paths to validation images from val_paths df
+                                        labels = val_paths["label"].to_numpy(), # access the paths to labels of validation images from val_paths df
                                         batch_size=16,
-                                        training=False)
+                                        training=False # set to False for validation set
+                                        )
 
-print(len(train_dataset))
-print(train_dataset.cardinality.numpy())
+# define paths for csv files containing the results of randomised hyperparameter search
+output_best_params = "./search_best_params.csv"
+output_mean_scores = "./search_mean_scores.csv"
+output_val_scores = "./search_val_scores.csv"
+output_train_scores = "./search_train_scores.csv"
 
-
-output_search_best_params = "./search_best_params.csv"
-if not os.path.exists(output_search_best_params):
+# run randomised search with (stratified) kfold cross validation on the training dataset if the file with the randomised search results does not exist
+if not os.path.exists(output_best_params):
     print("Starting randomised search for hyperparameter tuning..")
-    best_model,  best_params, val_scores_best_model, train_scores_best_model = custom_randomised_search(train_dataset,
-                                    param_grid,
-                                    num_iter=20,
-                                    cvfolds=3,
-                                    custom_scoring=log_loss,
-                                    greaterisbetter_param=False)
-    save_randomized_search_results(grid_result, output_search_best_params)
-    print(f"Saved randomised search results to {output_search_best_params}")
+    best_model,  best_params, mean_scores_best_model, val_scores_best_model, train_scores_best_model = custom_randomised_search(train_paths,
+                                                                                                                                param_grid,
+                                                                                                                                num_iter=1,
+                                                                                                                                cvfolds=3,
+                                                                                                                                batch_size=16)
+
+    save_randomized_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model, train_scores_best_model,
+                                   output_best_params, output_mean_scores, output_val_scores, output_train_scores)
+    print(f"Saved randomised search results to {output_best_params}")
 
 '''
 model = design_model_conv(img_size=224, 
