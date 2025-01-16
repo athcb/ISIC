@@ -1,10 +1,15 @@
 import pandas as pd
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 def save_training_results(model, history, output_training_history, output_model):
-    if not os.path.exists(output_training_history):
+    if os.path.exists(output_training_history):
+        logger.info("Training history already exists.")
+    else:
         model.save(output_model)
-        print(f"model saved to {output_model}")
+        logger.info(f"model saved to {output_model}")
 
         data = {"epoch": list(range(1, len(history.history["loss"]) + 1)),
                 "loss": history.history["loss"],
@@ -21,5 +26,5 @@ def save_training_results(model, history, output_training_history, output_model)
         history_vals = pd.DataFrame(data)
         history_vals.to_csv(output_training_history, index=False)
 
-        print("Training history values: ")
-        print(history_vals)
+        logger.info("Training history saved to file. History values: ")
+        logger.info(history_vals)

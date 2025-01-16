@@ -1,8 +1,10 @@
 from collections import Counter
+import logging
 
 ## Import Tensorflow libraries
 import tensorflow as tf
 
+logger = logging.getLogger(__name__)
 
 def load_image(file_path, label):
     img = tf.io.read_file(file_path)  # requires local paths
@@ -26,25 +28,25 @@ def create_train_val_datasets(file_paths, labels, batch_size, num_epochs, traini
     dataset = tf.data.Dataset.from_tensor_slices((file_paths, labels))
     dataset = dataset.map(load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     if training == True:
-        print("Starting augmentation...")
+        logger.info("Starting augmentation (training set)...")
         dataset = dataset.map(augment_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        print("Starting shuffling and batching...")
+        logger.info("Starting shuffling and batching...")
         dataset = dataset.shuffle(1000).batch(batch_size, drop_remainder=True)
         dataset_cardinality = dataset.cardinality().numpy()
         dataset_steps = len(file_paths) // batch_size
-        print("Cardinality train dataset: ", dataset_cardinality)
-        print("steps per epoch train dataset: ", len(file_paths) // batch_size)
-        print("steps per epoch train dataset float: ", len(file_paths) / batch_size)
+        logger.info("Cardinality train dataset: ", dataset_cardinality)
+        logger.info("steps per epoch train dataset: ", len(file_paths) // batch_size)
+        logger.info("steps per epoch train dataset float: ", len(file_paths) / batch_size)
         dataset = dataset.repeat(num_epochs)
         # dataset = dataset.batch(batch_size)
     else:
-        print("Starting batching...")
+        logger.info("Starting batching (validation set)...")
         dataset = dataset.batch(batch_size, drop_remainder=True)
         dataset_cardinality = dataset.cardinality().numpy()
         dataset_steps = len(file_paths) // batch_size
-        print("Cardinality val dataset: ", dataset_cardinality)
-        print("steps per epoch val dataset: ", len(file_paths) // batch_size)
-        print("steps per epoch val dataset float: ", len(file_paths) / batch_size)
+        logger.info("Cardinality val dataset: ", dataset_cardinality)
+        logger.info("steps per epoch val dataset: ", len(file_paths) // batch_size)
+        logger.info("steps per epoch val dataset float: ", len(file_paths) / batch_size)
     return dataset, dataset_steps
 
 

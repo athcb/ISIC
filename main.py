@@ -15,6 +15,7 @@ import scipy.stats as ss
 from scipy.stats import loguniform
 import os
 import logging
+from absl import logging as absl_logging
 
 ## Import third-party libraries
 import tensorflow as tf
@@ -39,8 +40,33 @@ from save_training_results import save_training_results
 from create_history_plots import create_history_plots
 from config import param_grid_tl, param_grid, image_directory, metadata_path, output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history
 
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(filename="model.log", level=logging.INFO)
+#logging.basicConfig(level = logging.INFO, format="%(asctime)s - %(levelname)s - %(lineno)d - %(message)s")
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+print("Logger level:", logger.getEffectiveLevel())
+
+# handler for displaying logs in the console
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# handler for saving messages to log file
+file_handler = logging.FileHandler("model.log", mode="w")
+file_handler.setLevel(logging.INFO)
+
+# format output of logger
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(lineno)d - %(message)s")
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+# add handlers to logger
+if not logger.hasHandlers():
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+absl_logging.set_verbosity(absl_logging.INFO)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="ISIC skin cancer classification model")

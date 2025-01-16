@@ -1,3 +1,6 @@
+import io
+import logging
+
 ## Import Tensorflow libraries
 import tensorflow as tf
 from tensorflow import keras
@@ -8,6 +11,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.applications import VGG16
 
+logger = logging.getLogger(__name__)
 
 def design_model_transfer_phase1(img_size,
                       num_channels,
@@ -40,7 +44,11 @@ def design_model_transfer_phase1(img_size,
     for layer in base_model.layers:
         layer.trainable = False
 
-    print(model.summary())
+    #stream = io.StringIO()
+    #model.summary(print_fn = lambda x: stream.write(f"{x}\n"))
+    logger.info(model.summary())
+    #summary_log = stream.getvalue()
+    #logger.info(summary_log)
 
     opt = Adam(learning_rate=learning_rate)
     model.compile(loss="binary_crossentropy",

@@ -1,4 +1,7 @@
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 def save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
                                    output_best_params, output_mean_scores, output_val_scores):
@@ -8,8 +11,8 @@ def save_randomised_search_results(best_model,  best_params, mean_scores_best_mo
     val_scores_best_model_df = pd.DataFrame(val_scores_best_model)
     #train_scores_best_model_df = pd.DataFrame(train_scores_best_model)
 
-    print("Best params DF: ")
-    print(best_params_df)
+    logger.info("Best params DF: ")
+    logger.info(best_params_df)
 
     best_params_df.to_csv(output_best_params, index=False)
     mean_scores_best_model_df.to_csv(output_mean_scores, index=False)
