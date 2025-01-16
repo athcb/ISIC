@@ -2,9 +2,12 @@ import pandas as pd
 ## Import Tensorflow libraries
 from tensorflow.keras.callbacks import EarlyStopping
 
+from create_datasets import create_train_val_datasets
+from design_model_tl import design_model_transfer_phase1, design_model_transfer_phase2
+from fit_model import fit_model
 
 
-def train_model(train_paths, val_paths, batch_size):
+def train_model(train_paths, val_paths, output_best_params, batch_size):
     # load best parameters values
     best_params = pd.read_csv(output_best_params)
 

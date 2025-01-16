@@ -1,4 +1,7 @@
+## Standard libraries
 #from PIL import Image
+import argparse
+
 from matplotlib import pyplot as plt
 from matplotlib import image as mpimg
 from io import BytesIO
@@ -9,8 +12,11 @@ import numpy as np
 from collections import Counter
 from sklearn.model_selection import train_test_split, StratifiedKFold
 import scipy.stats as ss
+from scipy.stats import loguniform
+import os
+import logging
 
-## Import Tensorflow libraries
+## Import third-party libraries
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential, Model
@@ -22,12 +28,9 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras import mixed_precision
 
-## Import other libraries
-from scipy.stats import loguniform
-import os
-
-## Import model functions
+## My modules
 from create_train_val_list import create_train_val_list
+from create_datasets import create_train_val_datasets
 from randomised_search import randomised_search
 from randomised_search_tl import randomised_search_tl
 from save_randomised_search_results import save_randomised_search_results
@@ -36,35 +39,57 @@ from save_training_results import save_training_results
 from create_history_plots import create_history_plots
 from config import param_grid_tl, param_grid, image_directory, metadata_path, output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history
 
-print(tf.__version__)
-policy = mixed_precision.Policy('mixed_float16')
-mixed_precision.set_global_policy(policy)
-tf.random.set_seed(11)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# create dataframes with the local paths to training and validation images and labels
-train_paths, val_paths = create_train_val_list(metadata_path, image_directory)
+def parse_args():
+    parser = argparse.ArgumentParser(description="ISIC skin cancer classification model")
+    parser.add_argument("--batch_size", type=int, default = 32, help = "batch size for random search and training")
+    parser.add_argument("--num_iter", type=int, default = 5, help="number of iterations for random search")
+    parser.add_argument("--cvfolds", type=int, default=3, help="number of folds for cross-validation in random search")
+    return parser.parse_args()
 
-# run randomised search with (stratified) kfold cross validation on the training dataset if the file with the randomised search results does not exist
-if not os.path.exists(output_best_params):
-    print("Starting randomised search for hyperparameter tuning..")
-    best_model, best_params, mean_scores_best_model, val_scores_best_model = randomised_search_tl(train_paths,
-                                                                                                  param_grid_tl,
-                                                                                                  num_iter=5,
-                                                                                                  cvfolds=3,
-                                                                                                  batch_size=32)
+def main():
+    logger.info(f"Tensorflow version {tf.__version__}")
+    policy = mixed_precision.Policy('mixed_float16')
+    mixed_precision.set_global_policy(policy)
+    tf.random.set_seed(11)
 
-    save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
-                                   output_best_params, output_mean_scores, output_val_scores)
-    print(f"Saved randomised search results to {output_best_params}")
+    args = parse_args()
+    batch_size = args.batch_size
+    num_iter = args.num_iter
+    cvfolds = args.cvfolds
 
-# train model with parameters from randomised search
-model, history = train_model(train_paths, val_paths, batch_size = 32)
+    # create dataframes with the local paths to training and validation images and labels
+    train_paths, val_paths = create_train_val_list(metadata_path, image_directory)
 
-# save model and training history
-save_training_results(history, model, output_training_history, output_model)
+    # run randomised search with (stratified) kfold cross validation on the training dataset if the file with the randomised search results does not exist
+    if not os.path.exists(output_best_params):
+        logger.info("Starting randomised search for hyperparameter tuning..")
+        best_model, best_params, mean_scores_best_model, val_scores_best_model = randomised_search_tl(train_paths,
+                                                                                                      param_grid_tl,
+                                                                                                      num_iter= num_iter,
+                                                                                                      cvfolds= cvfolds,
+                                                                                                      batch_size=batch_size)
 
-# create plots with loss and custom metrics
-create_history_plots(output_training_history)
+        save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
+                                       output_best_params, output_mean_scores, output_val_scores)
+        logger.info(f"Saved randomised search results to {output_best_params}")
+
+    # train model with parameters from randomised search
+    logger.info("Starting model training...")
+    model, history = train_model(train_paths, val_paths, output_best_params, batch_size = batch_size)
+
+    # save model and training history
+    logger.info("Saving model and training history...")
+    save_training_results(history, model, output_training_history, output_model)
+
+    # create plots with loss and custom metrics
+    create_history_plots(output_training_history)
+
+
+if __name__ == "__main__":
+    main()
 
 """
 model = design_model_conv(img_size=224, 
