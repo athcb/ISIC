@@ -7,7 +7,9 @@ from create_datasets import create_train_val_datasets
 from design_model_tl import design_model_transfer_phase1, design_model_transfer_phase2
 from fit_model import fit_model
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MainLogger")
+
+# TODO attention mechanisms, multi-scale learning, exponential decay
 
 
 def train_model(train_paths, val_paths, output_best_params, batch_size):
@@ -20,30 +22,30 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
                                               labels=train_paths["label"].to_numpy(),
                                               # access the paths to labels of training images from train_paths df
                                               batch_size= batch_size,
-                                              num_epochs = best_params["num_epochs"],
+                                              num_epochs = best_params["num_epochs"][0],
                                               training=True  # set to True for training set
                                               )
 
     val_dataset, val_steps = create_train_val_datasets(file_paths=val_paths["image_path"].to_numpy(),
                                             # access the paths to validation images from val_paths df
-                                            labels=val_paths["label"].to_numpy(),
+                                            labels=val_paths["label"][0],
                                             # access the paths to labels of validation images from val_paths df
                                             batch_size= batch_size,
-                                            num_epochs=best_params["num_epochs"],
+                                            num_epochs=best_params["num_epochs"][0],
                                             training=False  # set to False for validation set
                                             )
     logger.info("Fine Tuning Phase 1: Training the dense layers")
-    model, base_model =  design_model_transfer_phase1(best_params["img_size"],
-                          best_params["num_channels"],
-                          best_params["dropout_val"],
-                          best_params["num_dense_units"],
-                          best_params["activation_dense"],
-                          best_params["l2_reg_dense"],
-                          best_params["nodes_output"],
-                          best_params["activation_output"],
-                          best_params["learning_rate"],
-                          best_params["alpha"],
-                          best_params["gamma"])
+    model, base_model =  design_model_transfer_phase1(best_params["img_size"][0],
+                          best_params["num_channels"][0],
+                          best_params["dropout_val"][0],
+                          best_params["num_dense_units"][0],
+                          best_params["activation_dense"][0],
+                          best_params["l2_reg_dense"][0],
+                          best_params["nodes_output"][0],
+                          best_params["activation_output"][0],
+                          best_params["learning_rate"][0],
+                          best_params["alpha"][0],
+                          best_params["gamma"][0])
 
     early_stop = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=5)
 
@@ -52,22 +54,26 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
                                steps_per_epoch=train_steps,
                                validation_dataset=val_dataset,
                                validation_steps=val_steps,
-                               num_epochs=best_params["num_epochs"],
-                               weight_positive=best_params["weight_positive"],
+                               num_epochs=best_params["num_epochs"][0],
+                               weight_positive=best_params["weight_positive"][0],
                                callbacks = [early_stop],
                                verbose=1)
 
     logger.info("Fine Tuning Phase 2: Training the last 3 Convolutional layers")
 
-    model =  design_model_transfer_phase2(model, base_model, best_params["learning_rate"] * 0.5, best_params["alpha"], best_params["gamma"])
+    model =  design_model_transfer_phase2(model,
+                                          base_model,
+                                          best_params["learning_rate"].to_numpy() * 0.5,
+                                          best_params["alpha"].to_numpy(),
+                                          best_params["gamma"].to_numpy())
 
     model, history = fit_model(model,
                                train_dataset=train_dataset,
                                steps_per_epoch=train_steps,
                                validation_dataset=val_dataset,
                                validation_steps=val_steps,
-                               num_epochs= best_params["num_epochs"] // 2,
-                               weight_positive = best_params["weight_positive"],
+                               num_epochs= best_params["num_epochs"][0],
+                               weight_positive = best_params["weight_positive"][0],
                                callbacks = [early_stop],
                                verbose=1)
 

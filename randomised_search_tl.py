@@ -9,7 +9,7 @@ from design_model_tl import design_model_transfer_phase1, design_model_transfer_
 from fit_model import fit_model
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MainLogger")
 
 ## Custom Randomized Search Function with Transfer Learning
 def randomised_search_tl(train_paths, param_grid_tl, num_iter, cvfolds, batch_size):

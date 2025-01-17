@@ -38,12 +38,12 @@ from save_randomised_search_results import save_randomised_search_results
 from train_tl import train_model
 from save_training_results import save_training_results
 from create_history_plots import create_history_plots
-from config import param_grid_tl, param_grid, image_directory, metadata_path, output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history
+from config import param_grid_tl, param_grid, image_directory, metadata_path, output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history1, output_training_history2
 
 #logging.basicConfig(filename="model.log", level=logging.INFO)
 #logging.basicConfig(level = logging.INFO, format="%(asctime)s - %(levelname)s - %(lineno)d - %(message)s")
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MainLogger")
 logger.setLevel(logging.INFO)
 
 print("Logger level:", logger.getEffectiveLevel())
@@ -108,7 +108,7 @@ def main():
 
     # save model and training history
     logger.info("Saving model and training history...")
-    save_training_results(history, model, output_training_history, output_model)
+    save_training_results(model, history, output_training_history, output_model)
 
     # create plots with loss and custom metrics
     create_history_plots(output_training_history)

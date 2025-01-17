@@ -4,7 +4,7 @@ import logging
 ## Import Tensorflow libraries
 import tensorflow as tf
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MainLogger")
 
 def load_image(file_path, label):
     img = tf.io.read_file(file_path)  # requires local paths
@@ -34,10 +34,10 @@ def create_train_val_datasets(file_paths, labels, batch_size, num_epochs, traini
         dataset = dataset.shuffle(1000).batch(batch_size, drop_remainder=True)
         dataset_cardinality = dataset.cardinality().numpy()
         dataset_steps = len(file_paths) // batch_size
-        logger.info("Cardinality train dataset: ", dataset_cardinality)
+        logger.info(f"Cardinality train dataset: {dataset_cardinality}")
         logger.info("steps per epoch train dataset: ", len(file_paths) // batch_size)
         logger.info("steps per epoch train dataset float: ", len(file_paths) / batch_size)
-        dataset = dataset.repeat(num_epochs)
+        #dataset = dataset.repeat(num_epochs)
         # dataset = dataset.batch(batch_size)
     else:
         logger.info("Starting batching (validation set)...")

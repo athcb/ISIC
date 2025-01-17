@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.applications import VGG16
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MainLogger")
 
 def design_model_transfer_phase1(img_size,
                       num_channels,
@@ -55,7 +55,7 @@ def design_model_transfer_phase1(img_size,
                   #loss = focal_loss(alpha=alpha, gamma=gamma),
                   metrics=[tf.keras.metrics.Precision(name="precision"),
                            tf.keras.metrics.Recall(name="recall"),
-                           tf.keras.metrics.AUC(curve='PR')], # area under precision-recall curve
+                           tf.keras.metrics.AUC(curve='PR', name="auc_pr")], # area under precision-recall curve
                   optimizer=opt)
 
     return model, base_model
@@ -70,7 +70,7 @@ def design_model_transfer_phase2(model, base_model, learning_rate, alpha, gamma)
                   #loss = focal_loss(alpha=alpha, gamma=gamma),
                   metrics=[tf.keras.metrics.Precision(name="precision"),
                            tf.keras.metrics.Recall(name="recall"),
-                           tf.keras.metrics.AUC(curve='PR')], # area under precision-recall curve
+                           tf.keras.metrics.AUC(curve='PR', name="auc_pr")], # area under precision-recall curve
                   optimizer=opt)
 
     return model

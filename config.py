@@ -15,7 +15,8 @@ output_val_scores = "./search_val_scores.csv"
 output_model = "./model.keras"
 
 # csv containing the training history on an epoch level for visualisations
-output_training_history = "training_history.csv"
+output_training_history1 = "training_history_phase1.csv"
+output_training_history2 = "training_history_phase2.csv"
 
 # Parameter grid for model without transfer learning
 param_grid = {"img_size": [224],
