@@ -12,17 +12,18 @@ def load_image_metadata(file_path, label, metadata):
     img = tf.image.resize(img, [224, 224])
     # Normalize the pixel values
     img = img / 255.0
-    return (img, metadata), label
+    return {"input_image": img, "input_metadata": metadata}, label
 
 
 def augment_image(inputs, labels):
-    (img, metadata) = inputs
+    img = inputs["input_image"]
+    metadata = inputs["input_metadata"]
     img = tf.image.random_flip_left_right(img)
     img = tf.image.random_flip_up_down(img)
     img = tf.image.random_hue(img, max_delta=0.1)
     img = tf.image.random_saturation(img, lower=0.9, upper=1.1)
     img = tf.image.random_contrast(img, lower=0.9, upper=1.1)
-    return (img, metadata), labels
+    return {"input_image": img, "input_metadata": metadata}, labels
 
 
 def create_train_val_datasets(file_paths, labels, metadata, batch_size, num_epochs, training):
@@ -37,8 +38,6 @@ def create_train_val_datasets(file_paths, labels, metadata, batch_size, num_epoc
         dataset_steps = len(file_paths) // batch_size
         logger.info(f"Cardinality train dataset: {dataset_cardinality}")
         logger.info(f"steps per epoch train dataset: {dataset_steps}")
-        #dataset = dataset.repeat(num_epochs)
-        # dataset = dataset.batch(batch_size)
     else:
         logger.info("Starting batching (validation set)...")
         dataset = dataset.batch(batch_size, drop_remainder=True)

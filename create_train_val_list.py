@@ -8,8 +8,10 @@ logger = logging.getLogger("MainLogger")
 
 def create_train_val_list(metadata_path, image_directory):
 
+    logger.info("Staring creation of train and validation lists (csv) containing the image paths per split.")
     metadata = pd.read_csv(metadata_path)
     metadata = metadata[metadata.diagnosis != "unknown"]
+    print(metadata.columns)
 
     # convert sex column to binary
     metadata['sex'] = metadata['sex'].map({'male': 0, 'female': 1})
@@ -17,6 +19,7 @@ def create_train_val_list(metadata_path, image_directory):
     # fill null age values
     median_age = round(metadata["age_approx"].median())
     metadata.fillna({"age_approx": median_age}, inplace=True)
+    print(metadata.age_approx.describe())
 
     # create new category for null anatom_site values
     metadata.fillna({"anatom_site_general_challenge": "unknown"}, inplace=True)
@@ -45,14 +48,11 @@ def create_train_val_list(metadata_path, image_directory):
                               drop_first=True)
 
     # perform stratified train / val split on the image paths based on the target column
-    train_files, val_files = train_test_split(metadata[["image_path", "target"]],
+    train_files, val_files = train_test_split(metadata,
                                               test_size = 0.2,
                                               shuffle=True,
                                               random_state = 10,
                                               stratify=metadata["target"])
-
-    #smote = SMOTE(random_state=11)
-    #train_files_resampled = smote.fit_resample(train_files)
 
     num_train_samples = len(train_files)
     num_val_samples = len(val_files)
@@ -65,46 +65,89 @@ def create_train_val_list(metadata_path, image_directory):
                   "sex": train_files["sex"],
                   "age_approx": train_files["age_approx"],
                   "site_lower_extremity": train_files["site_lower_extremity"],
-                  "site_oreal/genital": train_files["site_oreal/genital"],
-                  "site_palms/soles": train_files["site_palms/soles"],
+                  "site_oral_genital": train_files[r"site_oral/genital"],
+                  "site_palms_soles": train_files[r"site_palms/soles"],
                   "site_torso": train_files["site_torso"],
                   "site_upper_extremity": train_files["site_upper_extremity"],
                   "site_unknown": train_files["site_unknown"]})
 
     val_df = pd.DataFrame({"image_path": val_files["image_path"],
                   "label": val_files["target"],
-                  "sex": train_files["sex"],
+                  "sex": val_files["sex"],
                   "age_approx": val_files["age_approx"],
                   "site_lower_extremity": val_files["site_lower_extremity"],
-                  "site_oreal/genital": val_files["site_oreal/genital"],
-                  "site_palms/soles": val_files["site_palms/soles"],
+                  "site_oral_genital": val_files[r"site_oral/genital"],
+                  "site_palms_soles": val_files[r"site_palms/soles"],
                   "site_torso": val_files["site_torso"],
                   "site_upper_extremity": val_files["site_upper_extremity"],
                   "site_unknown": val_files["site_unknown"]
                   })
-
+    print(train_df.info())
     # standardise columns
-    ct = ColumnTransformer(transformers=[("scaler", StandardScaler(), "age_approx")],
+    ct = ColumnTransformer(transformers=[("scaler", StandardScaler(), ["age_approx"])],
                            remainder="passthrough")
 
-    train_df = ct.fit_transform(train_df)
-    val_df = ct.transform(val_df)
+    # standardise columns
+    train_df_st = ct.fit_transform(train_df)
+    val_df_st = ct.transform(val_df)
 
-    logger.info(train_df.describe(include="all"))
+    train_df_st = pd.DataFrame(train_df_st, columns = ["age_approx"] + list(train_df.columns.drop("age_approx")))
+    val_df_st = pd.DataFrame(val_df_st, columns= ["age_approx"] + list(train_df.columns.drop("age_approx")))
 
-    train_df.to_csv("train.csv", index=False)
-    val_df.to_csv("val.csv", index=False)
+    correct_column_order = ["image_path",
+                               "label",
+                               "sex",
+                               "age_approx",
+                               "site_lower_extremity",
+                               "site_oral_genital",
+                               "site_palms_soles",
+                               "site_torso",
+                               "site_upper_extremity",
+                               "site_unknown"]
+    train_df_st = train_df_st[correct_column_order]
+    val_df_st = val_df_st[correct_column_order]
 
-    logger.info("Images per class in training set (ratios and total number):")
+    train_df_st["label"] = train_df_st["label"].astype(int)
+    train_df_st["sex"] = train_df_st["sex"].astype(int)
+    train_df_st["age_approx"] = train_df_st["age_approx"].astype(float)
+    train_df_st["site_lower_extremity"] = train_df_st["site_lower_extremity"].astype(int)
+    train_df_st["site_oral_genital"] = train_df_st["site_oral_genital"].astype(int)
+    train_df_st["site_palms_soles"] = train_df_st["site_palms_soles"].astype(int)
+    train_df_st["site_torso"] = train_df_st["site_torso"].astype(int)
+    train_df_st["site_upper_extremity"] = train_df_st["site_upper_extremity"].astype(int)
+    train_df_st["site_unknown"] = train_df_st["site_unknown"].astype(int)
+
+    val_df_st["label"] = val_df_st["label"].astype(int)
+    val_df_st["sex"] = val_df_st["sex"].astype(int)
+    val_df_st["age_approx"] = val_df_st["age_approx"].astype(float)
+    val_df_st["site_lower_extremity"] = val_df_st["site_lower_extremity"].astype(int)
+    val_df_st["site_oral_genital"] = val_df_st["site_oral_genital"].astype(int)
+    val_df_st["site_palms_soles"] = val_df_st["site_palms_soles"].astype(int)
+    val_df_st["site_torso"] = val_df_st["site_torso"].astype(int)
+    val_df_st["site_upper_extremity"] = val_df_st["site_upper_extremity"].astype(int)
+    val_df_st["site_unknown"] = val_df_st["site_unknown"].astype(int)
+
+    print(train_df_st.columns)
+    print(train_df_st.info())
+
+    train_df_st.to_csv("train.csv", index=False)
+    val_df_st.to_csv("val.csv", index=False)
+
+
     train_paths = pd.read_csv("train.csv")
-    logger.info(train_paths.label.value_counts(normalize=True))
-    logger.info(train_paths.label.value_counts())
 
-    logger.info("Suggested class weight: ", len(train_paths) / (2 * len(train_paths[train_paths.label == 1])))
+    print("Images per class in training set (ratios and total number):")
+    print(train_paths.label.value_counts(normalize=True))
+    print(train_paths.label.value_counts())
 
-    logger.info("Images per class in val set (ratios and total number):")
+    minority_class_weight = len(train_paths) / (2 * len(train_paths[train_paths.label == 1]))
+    print("Suggested class weight: ", {minority_class_weight})
+
     val_paths = pd.read_csv("val.csv")
-    logger.info(val_paths.label.value_counts(normalize=True))
-    logger.info(val_paths.label.value_counts())
+    print("Images per class in val set (ratios and total number):")
+    print(val_paths.head())
+    print(val_paths.label.value_counts(normalize=True))
+    print(val_paths.label.value_counts())
+    logger.info("Successfully created the train and validation csv.")
 
     return train_paths, val_paths

@@ -8,6 +8,7 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras import layers, initializers, Input
 from tensorflow.keras.layers import Dense, Dropout, InputLayer, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D, GlobalMaxPooling2D, BatchNormalization, Activation, Concatenate
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.schedules import ExponentialDecay
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.applications import VGG16
 
@@ -37,8 +38,8 @@ def design_model_transfer_phase1(img_size,
 
     # image input
     x = base_model(input_image)
-    #x = GlobalMaxPooling2D()(x)
-    x = Flatten()(x)
+    x = GlobalMaxPooling2D()(x)
+    #x = Flatten()(x)
 
     for j in range(len(num_dense_units)):
         x = Dense(num_dense_units[j],
@@ -49,10 +50,11 @@ def design_model_transfer_phase1(img_size,
         x = Dropout(dropout_val)(x)
 
     # metadata input
+    y = input_metadata
     for m in range(len(num_dense_units_metadata)):
         y = Dense(num_dense_units_metadata[m],
                   kernel_initializer=initializers.HeNormal(),
-                  kernel_regularizer=l2(l2_reg_dense))(input_metadata)
+                  kernel_regularizer=l2(l2_reg_dense))(y)
         y = Activation(activation_dense)(y)
         y = Dropout(dropout_val)(y)
 
@@ -83,12 +85,21 @@ def design_model_transfer_phase1(img_size,
 
     return model, base_model
 
-def design_model_transfer_phase2(model, base_model, learning_rate, alpha, gamma):
+def design_model_transfer_phase2(model, base_model, learning_rate, alpha, gamma, num_unfrozen_layers, decay_steps, decay_rate):
 
-    for layer in base_model.layers[-4:]:
+    # define trainable layers
+    for layer in base_model.layers[-num_unfrozen_layers:]:
         layer.trainable = True
 
-    opt = Adam(learning_rate=learning_rate)
+    # exponential learning rate decay
+    lr_schedule = ExponentialDecay(
+        initial_learning_rate = learning_rate,
+        decay_steps = decay_steps,
+        decay_rate = decay_rate,
+        staircase = True
+    )
+
+    opt = Adam(learning_rate=lr_schedule)
     model.compile(loss="binary_crossentropy",
                   #loss = focal_loss(alpha=alpha, gamma=gamma),
                   metrics=[tf.keras.metrics.Precision(name="precision"),

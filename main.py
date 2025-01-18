@@ -98,20 +98,20 @@ def main():
                                                                                                       cvfolds= cvfolds,
                                                                                                       batch_size=batch_size)
 
-        save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
-                                       output_best_params, output_mean_scores, output_val_scores)
-        logger.info(f"Saved randomised search results to {output_best_params}")
+    #    save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
+    #                                   output_best_params, output_mean_scores, output_val_scores)
+    #    logger.info(f"Saved randomised search results to {output_best_params}")
 
     # train model with parameters from randomised search
     logger.info("Starting model training...")
-    model, history = train_model(train_paths, val_paths, output_best_params, batch_size = batch_size)
+    #model, history_phase1, history_phase2 = train_model(train_paths, val_paths, output_best_params, batch_size = batch_size)
 
     # save model and training history
     logger.info("Saving model and training history...")
-    save_training_results(model, history, output_training_history, output_model)
+    #save_training_results(model, history_phase1, history_phase2, output_training_history1, output_training_history2, output_model)
 
     # create plots with loss and custom metrics
-    create_history_plots(output_training_history)
+    #create_history_plots(output_training_history1, output_training_history2)
 
 
 if __name__ == "__main__":
