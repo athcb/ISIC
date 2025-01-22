@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("MainLogger")
 
 def save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
                                    output_best_params, output_mean_scores, output_val_scores):

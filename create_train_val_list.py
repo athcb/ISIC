@@ -151,3 +151,28 @@ def create_train_val_list(metadata_path, image_directory):
     logger.info("Successfully created the train and validation csv.")
 
     return train_paths, val_paths
+
+def create_file_paths_all(metadata_path, image_directory):
+    metadata = pd.read_csv(metadata_path)
+    #metadata = metadata[metadata.diagnosis == "unknown"]
+    metadata["image_path"] = image_directory + "/" + metadata['image_name'] + '.jpg'
+
+    file_paths_all = metadata["image_path"]
+    file_paths_all.to_csv("file_paths_all.csv", index=False)
+
+    return file_paths_all
+
+def oversample_minority(train_paths, oversampling_factor):
+    minority_samples = train_paths[train_paths.label == 1]
+    train_paths_new = pd.concat([train_paths] + [minority_samples] * oversampling_factor, ignore_index=True)
+    train_paths_new = train_paths_new.sample(frac=1).reset_index(drop=True)
+
+    new_minority_ratio = train_paths_new[train_paths_new.label == 1].shape[0] / train_paths_new.shape[0]
+    logger.info(f"Minority ratio in train list after oversampling: {new_minority_ratio}")
+
+    minority_class_weight = len(train_paths_new) / (2 * len(train_paths_new[train_paths_new.label == 1]))
+    print("Suggested class weight after oversampling: ", {minority_class_weight})
+
+    train_paths_new.to_csv("train_oversampled.csv", index=False)
+
+    return train_paths_new

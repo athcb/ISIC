@@ -53,7 +53,7 @@ def randomised_search_tl(train_paths, param_grid_tl, num_iter, cvfolds, batch_si
             else:
                 params[key] = np.random.choice(values)  # randomly select a value from the list
 
-        early_stop = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=5)
+        early_stop = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=10)
 
         range_train_labels = np.arange(len(train_paths))
         train_labels = np.array(train_paths["label"])
@@ -61,13 +61,22 @@ def randomised_search_tl(train_paths, param_grid_tl, num_iter, cvfolds, batch_si
         for i, (train_index, val_index) in enumerate(skf.split(range_train_labels, train_labels)):
             print(f"Fold {i+1} in iteration {itr+1} for params set: {params}")
 
-            file_paths_train = train_paths["image_path"][train_index].to_numpy()
-            labels_train = train_paths["label"][train_index].to_numpy()
-            metadata_train = train_paths.iloc[train_index, 2:].to_numpy()
+            # oversample minority class in the training set only
+            train_paths = oversample_minority(train_paths[train_index])
+
+            file_paths_train = train_paths["image_path"].to_numpy()
+            labels_train = train_paths["label"].to_numpy()
+            metadata_train = train_paths.iloc[:, 2:].to_numpy()
+
+            ratio_minority_class = sum(labels_train) / file_paths_train.shape[0]
+            logger.info(f"Minority ratio in oversampled training set: {ratio_minority_class}")
 
             file_paths_val = train_paths["image_path"][val_index].to_numpy()
             labels_val = train_paths["label"][val_index].to_numpy()
             metadata_val = train_paths.iloc[val_index, 2:].to_numpy()
+
+            ratio_minority_class_val = sum(labels_val) / file_paths_val.shape[0]
+            logger.info(f"Minority ratio in (non-oversampled) validation set: {ratio_minority_class_val}")
 
             # Check class distribution per fold
             prop_train = sum(labels_train) / len(labels_train)
@@ -98,7 +107,9 @@ def randomised_search_tl(train_paths, param_grid_tl, num_iter, cvfolds, batch_si
                                                  alpha=params["alpha"],
                                                  gamma=params["gamma"],
                                                  num_metadata_features= metadata_train.shape[1],
-                                                 num_dense_units_metadata=params["num_dense_units_metadata"])
+                                                 num_dense_units_metadata=params["num_dense_units_metadata"],
+                                                 pooling_type= params["pooling_type"],
+                                                 batch_norm = params["batch_norm"])
 
             #initial_weights = model.get_weights()
 

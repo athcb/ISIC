@@ -12,7 +12,6 @@ logger = logging.getLogger("MainLogger")
 
 # TODO attention mechanisms, multi-scale learning
 
-
 def train_model(train_paths, val_paths, output_best_params, batch_size):
     # load best parameters values
     best_params = pd.read_csv(output_best_params)
@@ -31,8 +30,12 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     num_epochs = int(params["num_epochs"])
     weight_positive = float(params["weight_positive"])
     num_dense_units_metadata = int(params["num_dense_units_metadata"])
+    num_dense_units_combined = ast.literal_eval(params["num_dense_units_metadata"])
+    pooling_type = params["pooling_type"]
     num_unfrozen_layers = int(params["num_unfrozen_layers"])
     decay_rate = float(params["decay_rate"])
+    batch_norm = int(params["batch_norm"])
+
 
     metadata_train = train_paths.iloc[:, 2:].to_numpy()
     metadata_val = val_paths.iloc[:, 2:].to_numpy()
@@ -73,9 +76,12 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
                                                       alpha = alpha,
                                                       gamma = gamma,
                                                       num_metadata_features=num_metadata_features,
-                                                      num_dense_units_metadata= num_dense_units_metadata)
+                                                      num_dense_units_metadata= num_dense_units_metadata,
+                                                      num_dense_units_combined = num_dense_units_combined,
+                                                      pooling_type = pooling_type,
+                                                      batch_norm = batch_norm)
 
-    early_stop = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=5)
+    early_stop = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=10)
 
     model, history_phase1 = fit_model(model,
                                train_dataset=train_dataset,
@@ -90,8 +96,9 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     val_loss, val_precision, val_recall, val_auc = model.evaluate(val_dataset)
     loss, precision, recall, auc = model.evaluate(train_dataset)
 
-    logger.info(f"Train dataset overall results Phase 1: {loss}, {precision}, {recall}, {auc}")
-    logger.info(f"Val dataset overall results Phase 1: {val_loss}, {val_precision}, {val_recall}, {val_auc}")
+    logger.info(f"Train dataset overall results Phase 1: loss: {loss}, precision: {precision}, recall: {recall}, auc: {auc}")
+    logger.info(f"Val dataset overall results Phase 1: loss: {val_loss}, precision: {val_precision}, recall: {val_recall}, auc: {val_auc}")
+    logger.info(f"Phase 1 F1 Score: {2 * (val_precision * val_recall) / (val_precision + val_recall + tf.keras.backend.epsilon())}")
 
 
     logger.info("Fine Tuning Phase 2: Training the last 3 Convolutional layers")
@@ -118,7 +125,9 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     val_loss, val_precision, val_recall, val_auc = model.evaluate(val_dataset)
     loss, precision, recall, auc = model.evaluate(train_dataset)
 
-    logger.info(f"Train dataset overall results Phase 2: {loss}, {precision}, {recall}, {auc}")
-    logger.info(f"Val dataset overall results Phase 2: {val_loss}, {val_precision}, {val_recall}, {val_auc}")
+    logger.info(f"Train dataset overall results Phase 2: loss: {loss}, precision: {precision}, recall: {recall}, auc: {auc}")
+    logger.info(f"Val dataset overall results Phase 2: loss: {val_loss}, precision: {val_precision}, recall: {val_recall}, auc: {val_auc}")
+    logger.info(f"Phase 2 F1 Score: {2 * (val_precision * val_recall) / (val_precision + val_recall + tf.keras.backend.epsilon())}")
+
 
     return model, history_phase1, history_phase2

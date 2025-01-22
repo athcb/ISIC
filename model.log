@@ -1,6 +1,6 @@
-2025-01-18 11:27:02,973 - INFO - 79 - Tensorflow version 2.18.0
-2025-01-18 11:27:02,975 - INFO - 11 - Staring creation of train and validation lists (csv) containing the image paths per split.
-2025-01-18 11:27:03,045 - INFO - 28 - diagnosis
+2025-01-18 14:51:26,165 - INFO - 79 - Tensorflow version 2.18.0
+2025-01-18 14:51:26,167 - INFO - 11 - Staring creation of train and validation lists (csv) containing the image paths per split.
+2025-01-18 14:51:26,254 - INFO - 28 - diagnosis
 nevus                                 0.865212
 melanoma                              0.097301
 seborrheic keratosis                  0.022493
@@ -10,7 +10,7 @@ solar lentigo                         0.001166
 cafe-au-lait macule                   0.000167
 atypical melanocytic proliferation    0.000167
 Name: proportion, dtype: float64
-2025-01-18 11:27:03,046 - INFO - 29 - diagnosis
+2025-01-18 14:51:26,255 - INFO - 29 - diagnosis
 nevus                                 5193
 melanoma                               584
 seborrheic keratosis                   135
@@ -20,39 +20,39 @@ solar lentigo                            7
 cafe-au-lait macule                      1
 atypical melanocytic proliferation       1
 Name: count, dtype: int64
-2025-01-18 11:27:03,047 - INFO - 30 - Rations of benign vs malignant samples:
-2025-01-18 11:27:03,048 - INFO - 31 - benign_malignant
+2025-01-18 14:51:26,256 - INFO - 30 - Rations of benign vs malignant samples:
+2025-01-18 14:51:26,257 - INFO - 31 - benign_malignant
 benign       0.902699
 malignant    0.097301
 Name: proportion, dtype: float64
-2025-01-18 11:27:03,061 - INFO - 59 - Number of train images: 4801
-2025-01-18 11:27:03,061 - INFO - 60 - Number of val images: 1201
-2025-01-18 11:27:03,178 - INFO - 151 - Successfully created the train and validation csv.
-2025-01-18 11:27:03,179 - INFO - 94 - Starting randomised search for hyperparameter tuning..
-2025-01-18 11:27:03,448 - INFO - 33 - Starting augmentation (training set)...
-2025-01-18 11:27:03,579 - INFO - 35 - Starting shuffling and batching...
-2025-01-18 11:27:03,619 - INFO - 39 - Cardinality train dataset: 100
-2025-01-18 11:27:03,619 - INFO - 40 - steps per epoch train dataset: 100
-2025-01-18 11:27:03,633 - INFO - 42 - Starting batching (validation set)...
-2025-01-18 11:27:03,635 - INFO - 46 - Cardinality val dataset: 50
-2025-01-18 11:27:03,635 - INFO - 47 - steps per epoch val dataset: 50
-2025-01-18 11:27:04,216 - INFO - 70 - layer 0: input_layer
-2025-01-18 11:27:04,216 - INFO - 70 - layer 1: block1_conv1
-2025-01-18 11:27:04,216 - INFO - 70 - layer 2: block1_conv2
-2025-01-18 11:27:04,216 - INFO - 70 - layer 3: block1_pool
-2025-01-18 11:27:04,216 - INFO - 70 - layer 4: block2_conv1
-2025-01-18 11:27:04,216 - INFO - 70 - layer 5: block2_conv2
-2025-01-18 11:27:04,216 - INFO - 70 - layer 6: block2_pool
-2025-01-18 11:27:04,216 - INFO - 70 - layer 7: block3_conv1
-2025-01-18 11:27:04,216 - INFO - 70 - layer 8: block3_conv2
-2025-01-18 11:27:04,216 - INFO - 70 - layer 9: block3_conv3
-2025-01-18 11:27:04,216 - INFO - 70 - layer 10: block3_pool
-2025-01-18 11:27:04,216 - INFO - 70 - layer 11: block4_conv1
-2025-01-18 11:27:04,217 - INFO - 70 - layer 12: block4_conv2
-2025-01-18 11:27:04,217 - INFO - 70 - layer 13: block4_conv3
-2025-01-18 11:27:04,217 - INFO - 70 - layer 14: block4_pool
-2025-01-18 11:27:04,217 - INFO - 70 - layer 15: block5_conv1
-2025-01-18 11:27:04,217 - INFO - 70 - layer 16: block5_conv2
-2025-01-18 11:27:04,217 - INFO - 70 - layer 17: block5_conv3
-2025-01-18 11:27:04,217 - INFO - 70 - layer 18: block5_pool
-2025-01-18 11:27:04,249 - INFO - 74 - None
+2025-01-18 14:51:26,271 - INFO - 59 - Number of train images: 4801
+2025-01-18 14:51:26,271 - INFO - 60 - Number of val images: 1201
+2025-01-18 14:51:26,393 - INFO - 151 - Successfully created the train and validation csv.
+2025-01-18 14:51:26,394 - INFO - 94 - Starting randomised search for hyperparameter tuning..
+2025-01-18 14:51:26,679 - INFO - 33 - Starting augmentation (training set)...
+2025-01-18 14:51:26,810 - INFO - 35 - Starting shuffling and batching...
+2025-01-18 14:51:26,824 - INFO - 39 - Cardinality train dataset: 100
+2025-01-18 14:51:26,825 - INFO - 40 - steps per epoch train dataset: 100
+2025-01-18 14:51:26,842 - INFO - 42 - Starting batching (validation set)...
+2025-01-18 14:51:26,843 - INFO - 46 - Cardinality val dataset: 50
+2025-01-18 14:51:26,843 - INFO - 47 - steps per epoch val dataset: 50
+2025-01-18 14:51:27,329 - INFO - 70 - layer 0: input_layer
+2025-01-18 14:51:27,329 - INFO - 70 - layer 1: block1_conv1
+2025-01-18 14:51:27,329 - INFO - 70 - layer 2: block1_conv2
+2025-01-18 14:51:27,329 - INFO - 70 - layer 3: block1_pool
+2025-01-18 14:51:27,329 - INFO - 70 - layer 4: block2_conv1
+2025-01-18 14:51:27,329 - INFO - 70 - layer 5: block2_conv2
+2025-01-18 14:51:27,330 - INFO - 70 - layer 6: block2_pool
+2025-01-18 14:51:27,330 - INFO - 70 - layer 7: block3_conv1
+2025-01-18 14:51:27,330 - INFO - 70 - layer 8: block3_conv2
+2025-01-18 14:51:27,330 - INFO - 70 - layer 9: block3_conv3
+2025-01-18 14:51:27,330 - INFO - 70 - layer 10: block3_pool
+2025-01-18 14:51:27,330 - INFO - 70 - layer 11: block4_conv1
+2025-01-18 14:51:27,330 - INFO - 70 - layer 12: block4_conv2
+2025-01-18 14:51:27,330 - INFO - 70 - layer 13: block4_conv3
+2025-01-18 14:51:27,330 - INFO - 70 - layer 14: block4_pool
+2025-01-18 14:51:27,330 - INFO - 70 - layer 15: block5_conv1
+2025-01-18 14:51:27,330 - INFO - 70 - layer 16: block5_conv2
+2025-01-18 14:51:27,330 - INFO - 70 - layer 17: block5_conv3
+2025-01-18 14:51:27,330 - INFO - 70 - layer 18: block5_pool
+2025-01-18 14:51:27,369 - INFO - 74 - None

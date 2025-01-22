@@ -30,7 +30,7 @@ from tensorflow.keras.applications import VGG16
 from tensorflow.keras import mixed_precision
 
 ## My modules
-from create_train_val_list import create_train_val_list
+from create_train_val_list import create_train_val_list, oversample_minority, create_file_paths_all
 from create_datasets import create_train_val_datasets
 from randomised_search import randomised_search
 from randomised_search_tl import randomised_search_tl
@@ -71,8 +71,9 @@ absl_logging.set_verbosity(absl_logging.INFO)
 def parse_args():
     parser = argparse.ArgumentParser(description="ISIC skin cancer classification model")
     parser.add_argument("--batch_size", type=int, default = 32, help = "batch size for random search and training")
-    parser.add_argument("--num_iter", type=int, default = 5, help="number of iterations for random search")
+    parser.add_argument("--num_iter", type=int, default = 25, help="number of iterations for random search")
     parser.add_argument("--cvfolds", type=int, default=3, help="number of folds for cross-validation in random search")
+    parser.add_argument("--oversampling_factor", type=int, default=2, help="number of times to repeat the minority class")
     return parser.parse_args()
 
 def main():
@@ -85,12 +86,18 @@ def main():
     batch_size = args.batch_size
     num_iter = args.num_iter
     cvfolds = args.cvfolds
+    oversampling_factor = args.oversampling_factor
 
     # create dataframes with the local paths to training and validation images and labels
     train_paths, val_paths = create_train_val_list(metadata_path, image_directory)
+    train_paths_oversampling = oversample_minority(train_paths, oversampling_factor=oversampling_factor)
+
+    file_paths_all = create_file_paths_all(metadata_path, image_directory)
+
 
     # run randomised search with (stratified) kfold cross validation on the training dataset if the file with the randomised search results does not exist
-    if not os.path.exists(output_best_params):
+    #if not os.path.exists(output_best_params):
+    if not os.path.exists( "./search_results/results_iter20.csv"):
         logger.info("Starting randomised search for hyperparameter tuning..")
         best_model, best_params, mean_scores_best_model, val_scores_best_model = randomised_search_tl(train_paths,
                                                                                                       param_grid_tl,
@@ -98,20 +105,20 @@ def main():
                                                                                                       cvfolds= cvfolds,
                                                                                                       batch_size=batch_size)
 
-    #    save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
-    #                                   output_best_params, output_mean_scores, output_val_scores)
-    #    logger.info(f"Saved randomised search results to {output_best_params}")
+        save_randomised_search_results(best_model,  best_params, mean_scores_best_model, val_scores_best_model,
+                                       output_best_params, output_mean_scores, output_val_scores)
+        logger.info(f"Saved randomised search results to {output_best_params}")
 
     # train model with parameters from randomised search
     logger.info("Starting model training...")
-    #model, history_phase1, history_phase2 = train_model(train_paths, val_paths, output_best_params, batch_size = batch_size)
+    model, history_phase1, history_phase2 = train_model(train_paths_oversampling, val_paths, output_best_params, batch_size = batch_size)
 
     # save model and training history
     logger.info("Saving model and training history...")
-    #save_training_results(model, history_phase1, history_phase2, output_training_history1, output_training_history2, output_model)
+    save_training_results(model, history_phase1, history_phase2, output_training_history1, output_training_history2, output_model)
 
     # create plots with loss and custom metrics
-    #create_history_plots(output_training_history1, output_training_history2)
+    create_history_plots(output_training_history1, output_training_history2)
 
 
 if __name__ == "__main__":

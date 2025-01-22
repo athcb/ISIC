@@ -50,18 +50,21 @@ param_grid = {"img_size": [224],
 param_grid_tl = {"img_size": [224],
               "num_channels": [3],
               "dropout_val": [0.3, 0.4, 0.5], # dropout value for fully connected dense layers
-              "num_dense_units": [ [128, 64], [256, 128], [512], [512, 128]], # number of units in the FC layers after the conv layers (length of list also defines number of FC layers)
+              "num_dense_units": [ [256, 128, 64], [256, 64],  [512, 256, 64], [512], [512, 128], [128, 64, 32]], # number of units in the FC layers after the conv layers (length of list also defines number of FC layers)
               "activation_dense": ["relu"], # activation function in the FC layers
-              "l2_reg_dense": loguniform(1e-4, 1e-2), #L2 regularization in the FC layers
+              "l2_reg_dense": loguniform(1e-5, 1e-3), #L2 regularization in the FC layers
               "nodes_output": [1], # number of nodes in the output layer (1 for binary classification, else number of classes)
               "activation_output": ["sigmoid"], # activation function for the output layer (sigmoid for binary classification, softmax for multi-classification)
               #"learning_rate": loguniform(1e-4, 1e-3), # learning rate for gradient descent
-              "learning_rate": [0.0001], # learning rate for gradient descent
-              "num_epochs": [40], # number of training epochs
-              "weight_positive": [5.], # weight for the minority (positive) class in case of imbalanced datasets
+              "learning_rate": loguniform(1e-5, 1e-4), # learning rate for gradient descent
+              "num_epochs": [30], # number of training epochs
+              "weight_positive": [1., 1.5], # weight for the minority (positive) class in case of imbalanced datasets
               "alpha": [1.],
               "gamma": [0.],
-              "num_dense_units_metadata": [[64], [128], [64, 32], [128]],
-              "num_unfrozen_layers":[3, 4, 6, 8],
-              "decay_rate": [0.95]
+              "num_dense_units_metadata": [[256, 128], [128, 64], [64, 32], [512], [256], [128]],
+              "num_dense_units_combined": [[256, 128], [128, 64], [64, 32], [512], [256], [128]],
+              "num_unfrozen_layers":[3, 4, 6],
+              "decay_rate": [0.9, 0.95],
+              "pooling_type": ["flatten", "global_avg", "global_max"],
+              "batch_norm": [1, 0]
               }
