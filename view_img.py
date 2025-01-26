@@ -10,28 +10,53 @@ os.environ["SM_FRAMEWORK"] = "tf.keras"
 from segmentation_models import Unet
 import tensorflow as tf
 
+image_directory_2019 = "../ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training_Input/"
+
+ground_truth_2019 = pd.read_csv("../ISIC_data/ISIC_2019_Training_GroundTruth.csv")
+metadata_2019 = pd.read_csv("../ISIC_data/ISIC_2019_Training_Metadata.csv")
+ground_truth_2019 = ground_truth_2019[~ground_truth_2019.image.str.contains("_downsampled")]
+ground_truth_2019["target"] = ground_truth_2019.MEL.apply(lambda x: 1 if x == 1 else 0)
+gt_metadata_2019 = pd.merge(ground_truth_2019[["image", "target"]], metadata_2019, on="image", how="left")
+gt_metadata_2019["image_path"] = image_directory_2019 + gt_metadata_2019["image"] + ".jpg"
+
+image_paths = gt_metadata_2019[gt_metadata_2019.lesion_id == "BCN_0000011"]
+for i in range(len(image_paths)):
+    path =image_paths.image_path.iloc[i]
+    target = image_paths.target.iloc[i]
+    img = mpimg.imread(path)
+    img_height, img_width, _ = img.shape
+    plt.figure(figsize=(10,10))
+    plt.imshow(img)
+    plt.text(img_width * 0.05, img_height * 0.05, target, fontsize=10, color="black", backgroundcolor="white", ha="center")
+    #plt.text(img_width * 0.05, img_height * 0.10, benign_malignant, fontsize=10, color="black", backgroundcolor="white", ha="center")
+    plt.axis("off")
+    plt.show()
+
 
 metadata_path = "../ISIC_data/ISIC_2020_Training_GroundTruth.csv"
 metadata = pd.read_csv(metadata_path)
-#metadata = metadata[metadata.diagnosis != "unknown" ]
+metadata = metadata[metadata.target == 1 ]
 metadata["image_path"] = '../ISIC_data/ISIC_2020_Training_JPEG/train/' + metadata['image_name'] + '.jpg'
 
 #select random image from a given diagnosis:
-#for i in range(30):
-#    random_sample = metadata[metadata.diagnosis == "melanoma"].sample(1)
-#    diagnosis = random_sample["diagnosis"].item()
-#    benign_malignant = random_sample["benign_malignant"].item()
-#    image_path = random_sample["image_path"].item()
-#    img = mpimg.imread(image_path)
-#    img_height, img_width, _ = img.shape
-#    plt.figure(figsize=(10,10))
-#    plt.imshow(img)
-#    plt.text(img_width * 0.05, img_height * 0.05, diagnosis, fontsize=10, color="black", backgroundcolor="white", ha="center")
-#    plt.text(img_width * 0.05, img_height * 0.10, benign_malignant, fontsize=10, color="black", backgroundcolor="white", ha="center")
-#    plt.axis("off")
-#    plt.show()
+for i in range(len(metadata)):
+    random_sample = metadata[metadata.diagnosis == "melanoma"].sample(1)
+    diagnosis = random_sample["diagnosis"].item()
+    benign_malignant = random_sample["benign_malignant"].item()
+    image_path = random_sample["image_path"].item()
+    image_name = random_sample["image_name"].item()
+    img = mpimg.imread(image_path)
+    img_height, img_width, _ = img.shape
+    plt.figure(figsize=(10,10))
+    plt.imshow(img)
+    plt.text(img_width * 0.05, img_height * 0.05, image_name, fontsize=10, color="black", backgroundcolor="white", ha="center")
+    plt.text(img_width * 0.05, img_height * 0.10, benign_malignant, fontsize=10, color="black", backgroundcolor="white", ha="center")
+    plt.axis("off")
+    plt.show()
 
-
+artefacts = ["ISIC_0504165", "ISIC_9052500", "ISIC_9596721", "ISIC_9863642",  "ISIC_9022005", "ISIC_0351666", "ISIC_3963183", "ISIC_4404772",
+             "ISIC_3817719", "ISIC_7800750", "ISIC_6255113", "ISIC_3561065", "ISIC_9967383", "ISIC_9038318", "ISIC_2757355", "ISIC_8263489",
+             "ISIC_2072219", "ISIC_1388552", "ISIC_4938994", "ISIC_3517311", "ISIC_8483382", "ISIC_4851366", "ISIC_2797353"]
 # view images from a single patient:
 """
 images_patient = metadata[metadata.patient_id == "IP_0038545"]
@@ -89,7 +114,7 @@ for i in range(len(images_patient)):
 # Load a test image
 #images_patient = metadata[metadata.patient_id == "IP_0038545"]
 print(metadata.head())
-images_patient = metadata[metadata.image_name == "ISIC_0080752"]
+images_patient = metadata[metadata.target == 1]
 print(images_patient)
 for i in range(len(images_patient)):
     diagnosis = images_patient["diagnosis"].iloc[i]

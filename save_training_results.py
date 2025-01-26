@@ -11,7 +11,8 @@ def calculate_f1_score(precision, recall):
     return f1_score
 
 
-def save_training_results(model, history_phase1, history_phase2, output_training_history1, output_training_history2, output_model):
+def save_training_results(model, history_phase1, history_phase2, output_training_history1, output_training_history2,
+                          output_model):
     if os.path.exists(output_training_history1):
         logger.info("Training history already exists.")
     else:
