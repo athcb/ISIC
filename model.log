@@ -1,58 +1,23 @@
-2025-01-18 14:51:26,165 - INFO - 79 - Tensorflow version 2.18.0
-2025-01-18 14:51:26,167 - INFO - 11 - Staring creation of train and validation lists (csv) containing the image paths per split.
-2025-01-18 14:51:26,254 - INFO - 28 - diagnosis
-nevus                                 0.865212
-melanoma                              0.097301
-seborrheic keratosis                  0.022493
-lentigo NOS                           0.007331
-lichenoid keratosis                   0.006165
-solar lentigo                         0.001166
-cafe-au-lait macule                   0.000167
-atypical melanocytic proliferation    0.000167
-Name: proportion, dtype: float64
-2025-01-18 14:51:26,255 - INFO - 29 - diagnosis
-nevus                                 5193
-melanoma                               584
-seborrheic keratosis                   135
-lentigo NOS                             44
-lichenoid keratosis                     37
-solar lentigo                            7
-cafe-au-lait macule                      1
-atypical melanocytic proliferation       1
-Name: count, dtype: int64
-2025-01-18 14:51:26,256 - INFO - 30 - Rations of benign vs malignant samples:
-2025-01-18 14:51:26,257 - INFO - 31 - benign_malignant
-benign       0.902699
-malignant    0.097301
-Name: proportion, dtype: float64
-2025-01-18 14:51:26,271 - INFO - 59 - Number of train images: 4801
-2025-01-18 14:51:26,271 - INFO - 60 - Number of val images: 1201
-2025-01-18 14:51:26,393 - INFO - 151 - Successfully created the train and validation csv.
-2025-01-18 14:51:26,394 - INFO - 94 - Starting randomised search for hyperparameter tuning..
-2025-01-18 14:51:26,679 - INFO - 33 - Starting augmentation (training set)...
-2025-01-18 14:51:26,810 - INFO - 35 - Starting shuffling and batching...
-2025-01-18 14:51:26,824 - INFO - 39 - Cardinality train dataset: 100
-2025-01-18 14:51:26,825 - INFO - 40 - steps per epoch train dataset: 100
-2025-01-18 14:51:26,842 - INFO - 42 - Starting batching (validation set)...
-2025-01-18 14:51:26,843 - INFO - 46 - Cardinality val dataset: 50
-2025-01-18 14:51:26,843 - INFO - 47 - steps per epoch val dataset: 50
-2025-01-18 14:51:27,329 - INFO - 70 - layer 0: input_layer
-2025-01-18 14:51:27,329 - INFO - 70 - layer 1: block1_conv1
-2025-01-18 14:51:27,329 - INFO - 70 - layer 2: block1_conv2
-2025-01-18 14:51:27,329 - INFO - 70 - layer 3: block1_pool
-2025-01-18 14:51:27,329 - INFO - 70 - layer 4: block2_conv1
-2025-01-18 14:51:27,329 - INFO - 70 - layer 5: block2_conv2
-2025-01-18 14:51:27,330 - INFO - 70 - layer 6: block2_pool
-2025-01-18 14:51:27,330 - INFO - 70 - layer 7: block3_conv1
-2025-01-18 14:51:27,330 - INFO - 70 - layer 8: block3_conv2
-2025-01-18 14:51:27,330 - INFO - 70 - layer 9: block3_conv3
-2025-01-18 14:51:27,330 - INFO - 70 - layer 10: block3_pool
-2025-01-18 14:51:27,330 - INFO - 70 - layer 11: block4_conv1
-2025-01-18 14:51:27,330 - INFO - 70 - layer 12: block4_conv2
-2025-01-18 14:51:27,330 - INFO - 70 - layer 13: block4_conv3
-2025-01-18 14:51:27,330 - INFO - 70 - layer 14: block4_pool
-2025-01-18 14:51:27,330 - INFO - 70 - layer 15: block5_conv1
-2025-01-18 14:51:27,330 - INFO - 70 - layer 16: block5_conv2
-2025-01-18 14:51:27,330 - INFO - 70 - layer 17: block5_conv3
-2025-01-18 14:51:27,330 - INFO - 70 - layer 18: block5_pool
-2025-01-18 14:51:27,369 - INFO - 74 - None
+2025-01-26 19:42:29,561 - INFO - 87 - Tensorflow version 2.18.0
+2025-01-26 19:42:29,563 - INFO - 120 - Staring creation of train and validation lists (csv) containing the image paths per split.
+2025-01-26 19:42:29,679 - INFO - 53 - Pre-processed images from 2019 dataset:
+2025-01-26 19:42:29,679 - INFO - 54 - Number of 2019 images: 23053
+2025-01-26 19:42:29,680 - INFO - 55 - Number of 2019 melanoma samples: 4114
+2025-01-26 19:42:29,680 - INFO - 56 - Ratio of melanoma to benign samples (2019) - includes images of same lesions from different angles: 0.1784583351407626
+2025-01-26 19:42:29,780 - INFO - 99 - Pre-processed images from 2020 dataset:
+2025-01-26 19:42:29,780 - INFO - 100 - Number of 2020 images that were kept (samples with non-null diagnosis): 5995
+2025-01-26 19:42:29,780 - INFO - 101 - Number of 2020 melanoma samples: 581
+2025-01-26 19:42:29,780 - INFO - 102 - Ratio of melanoma to benign samples (2020): 0.0969140950792327
+2025-01-26 19:42:29,784 - INFO - 112 - Combined dataset (2019 & 2020), nrows: 29048, ratio of melanoma samples: 0.16162902781602864, total melanoma samples: 4695, total benign samples: 24353
+2025-01-26 19:42:29,814 - INFO - 144 - Number of train images: 23238
+2025-01-26 19:42:29,815 - INFO - 145 - Number of val images: 5810
+2025-01-26 19:42:31,800 - INFO - 253 - Successfully created the train and validation csv.
+2025-01-26 19:42:31,838 - INFO - 295 - Undersampling factor: 0.0
+2025-01-26 19:42:31,839 - INFO - 296 - Majority samples removed: 0
+2025-01-26 19:42:31,918 - INFO - 302 - Maj ratio in train list after undersampling: 0.8383681900335657
+2025-01-26 19:42:31,918 - INFO - 303 - Total samples after undersampling: 23238
+2025-01-26 19:42:33,209 - INFO - 277 - Minority ratio in train list after oversampling: 0.5743872067112334
+2025-01-26 19:42:33,210 - INFO - 278 - Total samples after oversampling: 45774
+2025-01-26 19:42:34,958 - INFO - 119 - Starting randomised search for hyperparameter tuning..
+2025-01-26 19:42:34,959 - INFO - 29 - --------------ITERATION # 1---------------
+2025-01-26 19:42:34,962 - INFO - 59 - Fold 1 in iteration 1 for params set: {'img_size': np.int64(224), 'num_channels': np.int64(3), 'dropout_val': np.float64(0.4), 'num_dense_units': [256, 128], 'activation_dense': np.str_('relu'), 'l2_reg_dense': np.float64(0.00075), 'nodes_output': np.int64(1), 'activation_output': np.str_('sigmoid'), 'learning_rate': np.float64(2.5e-05), 'num_epochs': np.int64(20), 'weight_positive': np.float64(1.0), 'alpha': np.float64(1.0), 'gamma': np.float64(0.0), 'num_dense_units_metadata': [64, 32], 'num_dense_units_features': [256], 'num_dense_units_combined': [128, 64], 'num_unfrozen_layers': np.int64(2), 'decay_rate': np.float64(0.95), 'pooling_type': np.str_('global_avg'), 'batch_norm': np.int64(1), 'lr_scaling_factor_phase2': np.float64(1.0)}

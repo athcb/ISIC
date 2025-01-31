@@ -5,6 +5,7 @@ import glob
 import scipy.stats as ss
 import tensorflow as tf
 from create_datasets import create_train_val_datasets
+from create_train_val_list import oversample_minority
 from design_model_tl import design_model_transfer_phase1, design_model_transfer_phase2
 from fit_model import fit_model
 import logging

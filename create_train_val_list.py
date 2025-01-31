@@ -9,6 +9,7 @@ from sklearn.compose import ColumnTransformer
 import logging
 
 logger = logging.getLogger("MainLogger")
+
 def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_path_2019):
     ground_truth_2019 = pd.read_csv(groundtruth_path_2019)
     metadata_2019 = pd.read_csv(metadata_path_2019)
@@ -21,7 +22,7 @@ def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_p
 
     # merge dfs with ground truth and metadata
     gt_metadata_2019 = pd.merge(ground_truth_2019[["image", "target"]], metadata_2019, on="image", how="left")
-    gt_metadata_2019["image_path"] = image_directory_2019 + gt_metadata_2019["image"] + ".jpg"
+    gt_metadata_2019["image_path"] = image_directory_2019 +  "/" + gt_metadata_2019["image"] + ".jpg"
 
     # clean column: anatom_site_general
     gt_metadata_2019.rename(columns={"anatom_site_general": "site"}, inplace=True)
@@ -47,9 +48,11 @@ def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_p
 
     # log overview
     total_samples = gt_metadata_2019.shape[0]
-    ratio_melanoma = sum(gt_metadata_2019[gt_metadata_2019.target ==1]["target"])/total_samples
+    melanoma_samples = sum(gt_metadata_2019[gt_metadata_2019.target ==1]["target"])
+    ratio_melanoma = melanoma_samples/total_samples
     logger.info(f"Pre-processed images from 2019 dataset:")
     logger.info(f"Number of 2019 images: {total_samples}")
+    logger.info(f"Number of 2019 melanoma samples: {melanoma_samples}")
     logger.info(f"Ratio of melanoma to benign samples (2019) - includes images of same lesions from different angles: {ratio_melanoma}")
 
     return gt_metadata_2019
@@ -95,17 +98,18 @@ def preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_pa
     ratio_melanoma = melanoma_samples/total_samples
     logger.info(f"Pre-processed images from 2020 dataset:")
     logger.info(f"Number of 2020 images that were kept (samples with non-null diagnosis): {total_samples}")
-    logger.info((f"Ratio of melanoma to benign samples (2020): {ratio_melanoma}")
+    logger.info(f"Number of 2020 melanoma samples: {melanoma_samples}")
+    logger.info(f"Ratio of melanoma to benign samples (2020): {ratio_melanoma}")
 
     return metadata_2020
 
 def combine_datasets(metadata_2019, metadata_2020):
-    combined_metadata = pd.concat([metadata_2019, metadata_2020], axis = 0)
+    combined_metadata = pd.concat([metadata_2019, metadata_2020], axis = 0).reset_index(drop=True)
 
     total_samples = combined_metadata.shape[0]
-    melanoma_samples = sum(combined_metadata[metadata_2020.target ==1]["target"])
+    melanoma_samples = sum(combined_metadata[combined_metadata.target ==1]["target"])
     ratio_melanoma = melanoma_samples / total_samples
-    logger.info(f"Combined dataset (2019 & 2020), nrows: {total_samples}, ratio of melanoma samples: {ratio_melanoma}")
+    logger.info(f"Combined dataset (2019 & 2020), nrows: {total_samples}, ratio of melanoma samples: {ratio_melanoma}, total melanoma samples: {melanoma_samples}, total benign samples: {total_samples - melanoma_samples}")
 
     return combined_metadata
 
@@ -265,13 +269,17 @@ def create_file_paths_simclr(image_directory_2019, metadata_path_2019, groundtru
 
 
 def oversample_minority(train_paths, oversampling_factor):
+    majority_samples = train_paths[train_paths.label == 0]
     minority_samples = train_paths[train_paths.label == 1]
-    train_paths_new = pd.concat([train_paths] + [minority_samples] * oversampling_factor, ignore_index=True)
+    train_paths_new = pd.concat([majority_samples] + [minority_samples] * oversampling_factor, ignore_index=True)
+
     train_paths_new = train_paths_new.sample(frac=1).reset_index(drop=True)
 
     new_minority_ratio = train_paths_new[train_paths_new.label == 1].shape[0] / train_paths_new.shape[0]
     logger.info(f"Minority ratio in train list after oversampling: {new_minority_ratio}")
     logger.info(f"Total samples after oversampling: {train_paths_new.shape[0]}")
+    logger.info(f"Total benign samples after oversampling: {train_paths_new[train_paths_new.label == 0].shape[0]}")
+    logger.info(f"Total melanoma samples after oversampling: {train_paths_new[train_paths_new.label == 1].shape[0]}")
 
     minority_class_weight = len(train_paths_new) / (2 * len(train_paths_new[train_paths_new.label == 1]))
     print("Suggested class weight after oversampling: ", {minority_class_weight})
@@ -297,6 +305,8 @@ def undersample_majority(train_paths, undersampling_factor):
     new_maj_ratio = train_paths_new[train_paths_new.label == 0].shape[0] / train_paths_new.shape[0]
     logger.info(f"Maj ratio in train list after undersampling: {new_maj_ratio}")
     logger.info(f"Total samples after undersampling: {train_paths_new.shape[0]}")
+    logger.info(f"Total benign samples after undersampling: {maj_samples_after}")
+    logger.info(f"Total melanoma samples after undersampling: {train_paths_new[train_paths_new.label == 1].shape[0]}")
 
     # minority_class_weight = len(train_paths_new) / (2 * len(train_paths_new[train_paths_new.label == 1]))
     # print("Suggested class weight after oversampling: ", {minority_class_weight})

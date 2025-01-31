@@ -12,9 +12,6 @@ from keras.optimizers import Adam
 from keras.optimizers.schedules import ExponentialDecay
 from keras.regularizers import l2
 from keras.applications import ResNet50
-from create_datasets import create_dataset_simclr
-from create_train_val_list import create_file_paths_all
-from config import metadata_path, image_directory
 import os
 import logging
 
@@ -87,9 +84,9 @@ def extract_features(model, dataset, batch_size):
     return features_concat
 
 
-def save_features(features, file_paths_all, features_output):
+def save_features(features, file_paths_simclr, features_output):
     features_df = pd.DataFrame(features, columns=[f"feature_{i + 1}" for i in range(features.shape[1])])
-    combined_df = pd.concat([file_paths_all, features_df], axis=1)
+    combined_df = pd.concat([file_paths_simclr, features_df], axis=1)
     logger.info(f"Number of rows in features file {len(combined_df)}")
     combined_df.to_csv(features_output, index=False)
     logger.info(f"Saved predicted simclr feautures to {features_output}.")

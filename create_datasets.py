@@ -4,9 +4,13 @@ import cv2
 
 ## Import Tensorflow libraries
 import tensorflow as tf
-from tf.keras.applications.resnet50 import preprocess_input as resnet50_preprocess_input
-from tf.keras.applications.densenet import preprocess_input as densenet_preprocess_input
-from tf.keras.applications.vgg16 import preprocess_input as vgg16_preprocess_input
+from tensorflow.keras.applications.resnet50 import preprocess_input as resnet50_preprocess_input
+from tensorflow.keras.applications.densenet import preprocess_input as densenet_preprocess_input
+from tensorflow.keras.applications.vgg16 import preprocess_input as vgg16_preprocess_input
+
+#aws s3 cp ./PycharmProjects/ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training_Input s3://isic-2019-dataset/train/ --recursive
+
+
 
 logger = logging.getLogger("MainLogger")
 

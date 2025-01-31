@@ -31,7 +31,7 @@ from tensorflow.keras import mixed_precision
 
 ## My modules
 from create_train_val_list import create_train_val_list, oversample_minority, undersample_majority, create_file_paths_simclr
-from create_datasets import create_train_val_datasets
+from create_datasets import create_train_val_datasets, create_dataset_simclr
 from randomised_search import randomised_search
 from randomised_search_tl import randomised_search_tl
 from save_randomised_search_results import save_randomised_search_results
@@ -39,7 +39,7 @@ from train_tl import train_model
 from save_training_results import save_training_results
 from create_history_plots import create_history_plots
 from config import param_grid_tl, param_grid, image_directory_2019, image_directory_2020, metadata_path_2020, metadata_path_2019, duplicates_path_2020, groundtruth_path_2019,  output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history1, output_training_history2, features_output, simclr_history_output
-from simclr import create_dataset_simclr, save_simclr_training_history, build_simclr_model, extract_features, save_features
+from simclr import save_simclr_training_history, build_simclr_model, extract_features, save_features
 
 #logging.basicConfig(filename="model.log", level=logging.INFO)
 #logging.basicConfig(level = logging.INFO, format="%(asctime)s - %(levelname)s - %(lineno)d - %(message)s")
@@ -79,6 +79,7 @@ def parse_args():
                         help="number of times to repeat the minority class")
     parser.add_argument("--undersampling_factor", type=float, default=0.,
                         help="ratio of majority class to remove from dataset")
+    parser.add_argument("--batch_size_simclr", type=int, default=32, help="batch size for simclr model")
     return parser.parse_args()
 
 
@@ -94,17 +95,18 @@ def main():
     cvfolds = args.cvfolds
     oversampling_factor = args.oversampling_factor
     undersampling_factor = args.undersampling_factor
+    batch_size_simclr = args.batch_size_simclr
 
     if not os.path.exists(features_output):
-        file_paths_all = create_file_paths_simclr(image_directory_2019, metadata_path_2019, groundtruth_path_2019,
+        file_paths_simclr = create_file_paths_simclr(image_directory_2019, metadata_path_2019, groundtruth_path_2019,
                                                image_directory_2020, metadata_path_2020, duplicates_path_2020)
-        simclr_dataset = create_dataset_simclr(file_paths_all, batch_size=128)
+        simclr_dataset = create_dataset_simclr(file_paths_simclr, batch_size=batch_size_simclr)
         logger.info(len(simclr_dataset))
-        simclr_model = build_simclr_model(img_size=224, num_channels=3, learning_rate=0.0015)
-        history = simclr_model.fit(simclr_dataset, epochs=50)
+        simclr_model = build_simclr_model(img_size=224, num_channels=3, learning_rate=0.002)
+        history = simclr_model.fit(simclr_dataset, epochs=1)
         save_simclr_training_history(history, simclr_history_output)
-        features = extract_features(simclr_model, simclr_dataset, batch_size=128)
-        save_features(features, file_paths_all, features_output)
+        features = extract_features(simclr_model, simclr_dataset, batch_size=batch_size_simclr)
+        save_features(features, file_paths_simclr, features_output)
 
     # create dataframes with the local paths to training and validation images and labels
     train_paths, val_paths = create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_path_2019,

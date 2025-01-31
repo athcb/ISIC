@@ -7,10 +7,10 @@ from tensorflow import keras
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras import layers, initializers, Input
 from tensorflow.keras.layers import Dense, Dropout, InputLayer, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D, GlobalMaxPooling2D, BatchNormalization, Activation, Concatenate
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.applications import VGG16, SGD
+from tensorflow.keras.applications import VGG16
 from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.applications import DenseNet121, DenseNet169
 
@@ -63,8 +63,7 @@ def design_model_transfer_phase1(img_size,
     logger.info(f"Base model: {base_model.name}")
     logger.info(f"Trainable & Non-Trainable Layers:")
     for layer in base_model.layers:
-        if layer.name in ("block3_conv2", "block3_conv3", "block3_pool",
-                          "block4_conv1"):
+        if layer.name in ("block3_conv1", "block3_conv2", "block3_conv3", "block3_pool"):
             layer.trainable = True
             logger.info(f"Trainable layer: {layer.name}")
         else:
@@ -156,7 +155,9 @@ def design_model_transfer_phase1(img_size,
                   #loss = focal_loss(alpha=alpha, gamma=gamma),
                   metrics=[tf.keras.metrics.Precision(name="precision"),
                            tf.keras.metrics.Recall(name="recall"),
-                           tf.keras.metrics.AUC(curve='PR', name="auc_pr")], # area under precision-recall curve
+                           tf.keras.metrics.AUC(curve='PR', name="auc_pr"),
+                           tf.keras.metrics.Accuracy(name="accuracy"),
+                           tf.keras.metrics.AUC(name="auc"], # area under precision-recall curve
                   optimizer=opt)
 
     return model, base_model
