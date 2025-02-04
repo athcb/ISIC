@@ -19,6 +19,9 @@ def load_image(file_path):
     #img_test = img
     # img = tf.cast(img, tf.float32)
     #img = vgg16_preprocess_input(img)
+
+    #img = vgg16_preprocess_input(img)
+    #img_original = vgg16_preprocess_input(img_original)
     return img
 
 
@@ -35,10 +38,10 @@ def augment_image(img):
     img = tf.image.random_crop(img, size=[200, 200, 3])
     img = tf.image.resize(img, size=[224, 224])
 
-    img = dropout(img, DIM=224, PROBABILITY = 0.75, CT = 5, SZ = 0.15)
-
+    img = dropout(img, DIM=224, PROBABILITY = 0.75, CT = 5, SZ = 0.1)
     img = vgg16_preprocess_input(img)
     img_original = vgg16_preprocess_input(img_original)
+
 
 
     #img = tf.image.resize_with_crop_or_pad(img, int(img.shape[0] * 0.8), int(img.shape[1] * 0.8))
@@ -229,15 +232,15 @@ def rescale_img_vgg(img):
     return img
 
 
-metadata_path = "../ISIC_data/ISIC_2020_Training_GroundTruth.csv"
+metadata_path = "../ISIC_data/ISIC_2019_Training_GroundTruth.csv"
 metadata = pd.read_csv(metadata_path)
 #metadata = metadata[metadata.diagnosis != "unknown" ]
-metadata["image_path"] = '../ISIC_data/ISIC_2020_Training_JPEG/train/' + metadata['image_name'] + '.jpg'
+metadata["image_path"] = '../ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training_Input/' + metadata['image'] + '.jpg'
 
 
 for _ in range(5):
     num_images = 5
-    img_samples = metadata[metadata.target==1]["image_path"].sample(num_images)
+    img_samples = metadata[metadata.BCC==1]["image_path"].sample(num_images)
     print(img_samples)
     fig, axes = plt.subplots(num_images, 2, figsize=(10, 10))
     for i in range(num_images):

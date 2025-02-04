@@ -35,10 +35,10 @@ from create_datasets import create_train_val_datasets, create_dataset_simclr
 from randomised_search import randomised_search
 from randomised_search_tl import randomised_search_tl
 from save_randomised_search_results import save_randomised_search_results
-from train_tl import train_model
+from train_model import train_model
 from save_training_results import save_training_results
 from create_history_plots import create_history_plots
-from config import param_grid_tl, param_grid, image_directory_2019, image_directory_2020, metadata_path_2020, metadata_path_2019, duplicates_path_2020, groundtruth_path_2019,  output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history1, output_training_history2, features_output, simclr_history_output
+from config import param_grid_tl, param_grid, image_directory_2019, image_directory_2020, metadata_path_2020, metadata_path_2019, duplicates_path_2020, groundtruth_path_2019,  output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history1, output_training_history2, features_output, simclr_history_output, output_training_history3, output_training_history4
 from simclr import save_simclr_training_history, build_simclr_model, extract_features, save_features
 
 #logging.basicConfig(filename="model.log", level=logging.INFO)
@@ -74,12 +74,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="ISIC skin cancer classification model")
     parser.add_argument("--batch_size", type=int, default=32, help="batch size for random search and training")
     parser.add_argument("--num_iter", type=int, default=20, help="number of iterations for random search")
-    parser.add_argument("--cvfolds", type=int, default=3, help="number of folds for cross-validation in random search")
-    parser.add_argument("--oversampling_factor", type=int, default=6,
+    parser.add_argument("--cvfolds", type=int, default=2, help="number of folds for cross-validation in random search")
+    parser.add_argument("--oversampling_factor", type=int, default=2,
                         help="number of times to repeat the minority class")
     parser.add_argument("--undersampling_factor", type=float, default=0.,
                         help="ratio of majority class to remove from dataset")
-    parser.add_argument("--batch_size_simclr", type=int, default=32, help="batch size for simclr model")
+    parser.add_argument("--batch_size_simclr", type=int, default=128, help="batch size for simclr model")
     return parser.parse_args()
 
 
@@ -98,8 +98,7 @@ def main():
     batch_size_simclr = args.batch_size_simclr
 
     if not os.path.exists(features_output):
-        file_paths_simclr = create_file_paths_simclr(image_directory_2019, metadata_path_2019, groundtruth_path_2019,
-                                               image_directory_2020, metadata_path_2020, duplicates_path_2020)
+        file_paths_simclr = create_file_paths_simclr()
         simclr_dataset = create_dataset_simclr(file_paths_simclr, batch_size=batch_size_simclr)
         logger.info(len(simclr_dataset))
         simclr_model = build_simclr_model(img_size=224, num_channels=3, learning_rate=0.002)
@@ -130,16 +129,14 @@ def main():
 
     # train model with parameters from randomised search
     logger.info("Starting model training...")
-    model, history_phase1, history_phase2 = train_model(train_paths_oversampled, val_paths, output_best_params,
-                                                        batch_size=batch_size)
+    model, history_phase1, history_phase2, history_phase3, history_phase4  = train_model(train_paths_oversampled, val_paths, output_best_params, batch_size = batch_size)
 
     # save model and training history
     logger.info("Saving model and training history...")
-    save_training_results(model, history_phase1, history_phase2, output_training_history1, output_training_history2,
-                          output_model)
+    save_training_results(model, history_phase1, history_phase2, history_phase3, history_phase4, output_training_history1, output_training_history2, output_training_history3, output_training_history4, output_model)
 
     # create plots with loss and custom metrics
-    create_history_plots(output_training_history1, output_training_history2)
+    create_history_plots(output_training_history1, output_training_history2, output_training_history3, output_training_history4)
 
 
 if __name__ == "__main__":

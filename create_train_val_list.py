@@ -8,17 +8,23 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.compose import ColumnTransformer
 import logging
 
+from config import  image_directory_2020, image_directory_2019, metadata_path_2019, groundtruth_path_2019, metadata_path_2020, duplicates_path_2020, features_output
+
 logger = logging.getLogger("MainLogger")
 
 def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_path_2019):
     ground_truth_2019 = pd.read_csv(groundtruth_path_2019)
     metadata_2019 = pd.read_csv(metadata_path_2019)
+    grouped_by_lesion = metadata_2019.groupby("lesion_id").agg(num_lesion_images = ("image", "count"))
+
+    metadata_2019 = pd.merge(metadata_2019, grouped_by_lesion["num_lesion_images"], on = "lesion_id", how="left" )
+    metadata_2019.fillna({"num_lesion_images": 1}, inplace=True)
 
     # remove _downsampled images
     ground_truth_2019 = ground_truth_2019[~ground_truth_2019.image.str.contains("_downsampled")]
 
     # create target column based on melanoma diagnosis
-    ground_truth_2019["target"] = ground_truth_2019.MEL.apply(lambda x: 1 if x == 1 else 0)
+    ground_truth_2019["target"] = (ground_truth_2019.MEL == 1) | (ground_truth_2019.BCC == 1) | (ground_truth_2019.SCC == 1) | (ground_truth_2019.AK == 1)
 
     # merge dfs with ground truth and metadata
     gt_metadata_2019 = pd.merge(ground_truth_2019[["image", "target"]], metadata_2019, on="image", how="left")
@@ -35,7 +41,6 @@ def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_p
              "lateral torso": "torso"})
 
     # clean column: sex
-    #print(gt_metadata_2019[(gt_metadata_2019["sex"].isna()) & (gt_metadata_2019["target"] == 1)].groupby("lesion_id").count())
     gt_metadata_2019 = gt_metadata_2019[~gt_metadata_2019.sex.isna()]
     gt_metadata_2019["sex"] = gt_metadata_2019["sex"].map({"male": 0, "female": 1}).astype(int)
 
@@ -44,19 +49,18 @@ def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_p
     gt_metadata_2019.fillna({"age_approx": median_age}, inplace=True)
 
     # final df
-    gt_metadata_2019 = gt_metadata_2019[["image_path", "target", "sex", "age_approx", "site"]]
+    gt_metadata_2019 = gt_metadata_2019[["image_path", "target", "sex", "age_approx", "site", "num_lesion_images"]]
 
     # log overview
     total_samples = gt_metadata_2019.shape[0]
-    melanoma_samples = sum(gt_metadata_2019[gt_metadata_2019.target ==1]["target"])
-    ratio_melanoma = melanoma_samples/total_samples
+    cancer_samples = sum(gt_metadata_2019[gt_metadata_2019.target ==1]["target"])
+    ratio_cancer = cancer_samples/total_samples
     logger.info(f"Pre-processed images from 2019 dataset:")
     logger.info(f"Number of 2019 images: {total_samples}")
-    logger.info(f"Number of 2019 melanoma samples: {melanoma_samples}")
-    logger.info(f"Ratio of melanoma to benign samples (2019) - includes images of same lesions from different angles: {ratio_melanoma}")
+    logger.info(f"Number of 2019 melanoma samples: {cancer_samples}")
+    logger.info(f"Ratio of cancerous to benign samples (2019) - includes images of same lesions from different angles: {ratio_cancer}")
 
     return gt_metadata_2019
-
 
 def preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_path_2020):
     metadata_2020 = pd.read_csv(metadata_path_2020)
@@ -65,13 +69,14 @@ def preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_pa
     # remove duplicates from dataset
     metadata_2020 = pd.merge(metadata_2020, duplicates_2020["image_name_1"], left_on="image_name", right_on="image_name_1", how="left")
     metadata_2020 = metadata_2020[metadata_2020.image_name_1.isna()]
+    grouped_by_lesion = metadata_2020.groupby("lesion_id").agg(num_lesion_images=("image_name", "count"))
+    metadata_2020 = pd.merge(metadata_2020, grouped_by_lesion["num_lesion_images"], on="lesion_id", how="left")
 
     # create image_path column that points to local directory
     metadata_2020["image_path"] = image_directory_2020 + "/" + metadata_2020['image_name'] + '.jpg'
 
     # remove samples with unknown diagnosis (all benign)
     metadata_2020 = metadata_2020[metadata_2020.diagnosis != "unknown"]
-    # metadata = metadata[~metadata.sex.isna()]
 
     # clean column: sex
     metadata_2020['sex'] = metadata_2020['sex'].map({'male': 0, 'female': 1}).astype(int)
@@ -90,16 +95,16 @@ def preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_pa
                                                  "upper extremity": "upper_extremity"})
 
     # final df
-    metadata_2020 = metadata_2020[["image_path", "target", "sex", "age_approx", "site"]]
+    metadata_2020 = metadata_2020[["image_path", "target", "sex", "age_approx", "site", "num_lesion_images"]]
 
     # log overview
     total_samples = metadata_2020.shape[0]
-    melanoma_samples = sum(metadata_2020[metadata_2020.target ==1]["target"])
-    ratio_melanoma = melanoma_samples/total_samples
+    cancer_samples = sum(metadata_2020[metadata_2020.target ==1]["target"])
+    ratio_cancer = cancer_samples/total_samples
     logger.info(f"Pre-processed images from 2020 dataset:")
     logger.info(f"Number of 2020 images that were kept (samples with non-null diagnosis): {total_samples}")
-    logger.info(f"Number of 2020 melanoma samples: {melanoma_samples}")
-    logger.info(f"Ratio of melanoma to benign samples (2020): {ratio_melanoma}")
+    logger.info(f"Number of 2020 cancer samples: {cancer_samples}")
+    logger.info(f"Ratio of cancerous to benign samples (2020): {ratio_cancer}")
 
     return metadata_2020
 
@@ -107,9 +112,9 @@ def combine_datasets(metadata_2019, metadata_2020):
     combined_metadata = pd.concat([metadata_2019, metadata_2020], axis = 0).reset_index(drop=True)
 
     total_samples = combined_metadata.shape[0]
-    melanoma_samples = sum(combined_metadata[combined_metadata.target ==1]["target"])
-    ratio_melanoma = melanoma_samples / total_samples
-    logger.info(f"Combined dataset (2019 & 2020), nrows: {total_samples}, ratio of melanoma samples: {ratio_melanoma}, total melanoma samples: {melanoma_samples}, total benign samples: {total_samples - melanoma_samples}")
+    cancer_samples = sum(combined_metadata[combined_metadata.target ==1]["target"])
+    ratio_cancer = cancer_samples / total_samples
+    logger.info(f"Combined dataset (2019 & 2020), nrows: {total_samples}, ratio of cancer samples: {ratio_cancer}, total melanoma samples: {cancer_samples}, total benign samples: {total_samples - cancer_samples}")
 
     return combined_metadata
 
@@ -130,7 +135,6 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     combined_df = pd.get_dummies(combined_df,
                               columns=["site"],
                               drop_first=True)
-    print(combined_df.columns)
 
     # perform stratified train / val split on the image paths based on the target column
     train_files, val_files = train_test_split(combined_df,
@@ -143,11 +147,11 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     num_val_samples = len(val_files)
     logger.info(f"Number of train images: {num_train_samples}")
     logger.info(f"Number of val images: {num_val_samples}")
-    print("check train files cols: ", train_files.columns)
 
     # create csv files with train and validation image file paths
     train_df = pd.DataFrame({"image_path": train_files["image_path"],
                              "label": train_files["target"],
+                             "image_weight": 1./train_files["num_lesion_images"],
                              "sex": train_files["sex"],
                              "age_approx": train_files["age_approx"],
                              "site_lower_extremity": train_files["site_lower_extremity"],
@@ -159,6 +163,7 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
 
     val_df = pd.DataFrame({"image_path": val_files["image_path"],
                            "label": val_files["target"],
+                           "image_weight": 1. / val_files["num_lesion_images"],
                            "sex": val_files["sex"],
                            "age_approx": val_files["age_approx"],
                            "site_lower_extremity": val_files["site_lower_extremity"],
@@ -169,16 +174,30 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
                            "site_unknown": val_files["site_unknown"]
                            })
 
-    # standardise columns
-    ct = ColumnTransformer(transformers=[("scaler", StandardScaler(), ["age_approx"])],
-                           remainder="passthrough")
+    print("Check image weight column:")
+    print(train_df.image_weight.describe())
+    train_df = pd.merge(train_df, features_df, on="image_path", how="left")
+    val_df = pd.merge(val_df, features_df, on="image_path", how="left")
 
     # standardise columns
-    train_df_st = ct.fit_transform(train_df)
-    val_df_st = ct.transform(val_df)
+    #ct = ColumnTransformer(transformers=[("scaler", StandardScaler(), ["age_approx"])],
+    #                       remainder="passthrough")
 
-    train_df_st = pd.DataFrame(train_df_st, columns=["age_approx"] + list(train_df.columns.drop("age_approx")))
-    val_df_st = pd.DataFrame(val_df_st, columns=["age_approx"] + list(train_df.columns.drop("age_approx")))
+    age_scaler = StandardScaler()
+    train_df["age_approx"] = age_scaler.fit_transform(train_df[["age_approx"]])
+    val_df["age_approx"] = age_scaler.transform(val_df[["age_approx"]])
+
+    features_scaler = StandardScaler()
+    train_df.iloc[:, 11:] = features_scaler.fit_transform(train_df.iloc[:, 11:])
+    val_df.iloc[:, 11:] = features_scaler.transform(val_df.iloc[:, 11:])
+
+
+    # standardise columns
+    #train_df_st = ct.fit_transform(train_df)
+    #val_df_st = ct.transform(val_df)
+
+    #train_df_st = pd.DataFrame(train_df_st, columns=["age_approx"] + list(train_df.columns.drop("age_approx")))
+    #val_df_st = pd.DataFrame(val_df_st, columns=["age_approx"] + list(train_df.columns.drop("age_approx")))
 
     correct_column_order = ["image_path",
                             "label",
@@ -190,52 +209,50 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
                             "site_torso",
                             "site_upper_extremity",
                             "site_unknown"]
-    train_df_st = train_df_st[correct_column_order]
-    val_df_st = val_df_st[correct_column_order]
+    #train_df_st = train_df_st[correct_column_order]
+    #val_df_st = val_df_st[correct_column_order]
 
-    train_df_st["label"] = train_df_st["label"].astype(int)
-    train_df_st["sex"] = train_df_st["sex"].astype(int)
-    train_df_st["age_approx"] = train_df_st["age_approx"].astype(float)
-    train_df_st["site_lower_extremity"] = train_df_st["site_lower_extremity"].astype(int)
-    train_df_st["site_oral_genital"] = train_df_st["site_oral_genital"].astype(int)
-    train_df_st["site_palms_soles"] = train_df_st["site_palms_soles"].astype(int)
-    train_df_st["site_torso"] = train_df_st["site_torso"].astype(int)
-    train_df_st["site_upper_extremity"] = train_df_st["site_upper_extremity"].astype(int)
-    train_df_st["site_unknown"] = train_df_st["site_unknown"].astype(int)
+    #train_df_st["label"] = train_df_st["label"].astype(int)
+    #train_df_st["sex"] = train_df_st["sex"].astype(int)
+    #train_df_st["age_approx"] = train_df_st["age_approx"].astype(float)
+    #train_df_st["site_lower_extremity"] = train_df_st["site_lower_extremity"].astype(int)
+    #train_df_st["site_oral_genital"] = train_df_st["site_oral_genital"].astype(int)
+    #train_df_st["site_palms_soles"] = train_df_st["site_palms_soles"].astype(int)
+    #train_df_st["site_torso"] = train_df_st["site_torso"].astype(int)
+    #train_df_st["site_upper_extremity"] = train_df_st["site_upper_extremity"].astype(int)
+    #train_df_st["site_unknown"] = train_df_st["site_unknown"].astype(int)
 
-    val_df_st["label"] = val_df_st["label"].astype(int)
-    val_df_st["sex"] = val_df_st["sex"].astype(int)
-    val_df_st["age_approx"] = val_df_st["age_approx"].astype(float)
-    val_df_st["site_lower_extremity"] = val_df_st["site_lower_extremity"].astype(int)
-    val_df_st["site_oral_genital"] = val_df_st["site_oral_genital"].astype(int)
-    val_df_st["site_palms_soles"] = val_df_st["site_palms_soles"].astype(int)
-    val_df_st["site_torso"] = val_df_st["site_torso"].astype(int)
-    val_df_st["site_upper_extremity"] = val_df_st["site_upper_extremity"].astype(int)
-    val_df_st["site_unknown"] = val_df_st["site_unknown"].astype(int)
+    #val_df_st["label"] = val_df_st["label"].astype(int)
+    #val_df_st["sex"] = val_df_st["sex"].astype(int)
+    #val_df_st["age_approx"] = val_df_st["age_approx"].astype(float)
+    #val_df_st["site_lower_extremity"] = val_df_st["site_lower_extremity"].astype(int)
+    #val_df_st["site_oral_genital"] = val_df_st["site_oral_genital"].astype(int)
+    #val_df_st["site_palms_soles"] = val_df_st["site_palms_soles"].astype(int)
+    #val_df_st["site_torso"] = val_df_st["site_torso"].astype(int)
+    #val_df_st["site_upper_extremity"] = val_df_st["site_upper_extremity"].astype(int)
+    #val_df_st["site_unknown"] = val_df_st["site_unknown"].astype(int)
 
-    print(f"image path type in train df {train_df_st.image_path.dtype}")
-    num_rows1 = len(train_df_st)
-    train_df_st = pd.merge(train_df_st, features_df, on="image_path", how="left")
-    num_rows2 = len(train_df_st)
-    print(f"train df rows before merge {num_rows1} and after merge {num_rows2}")
+    #print(f"image path type in train df {train_df_st.image_path.dtype}")
+    #num_rows1 = len(train_df_st)
+    #train_df_st = pd.merge(train_df_st, features_df, on="image_path", how="left")
+    #num_rows2 = len(train_df_st)
+    #print(f"train df rows before merge {num_rows1} and after merge {num_rows2}")
 
-    num_rows1 = len(val_df_st)
-    val_df_st = pd.merge(val_df_st, features_df, on="image_path", how="left")
-    num_rows2 = len(val_df_st)
-    print(f"val df rows before merge {num_rows1} and after merge {num_rows2}")
+    #num_rows1 = len(val_df_st)
+    #val_df_st = pd.merge(val_df_st, features_df, on="image_path", how="left")
+    #num_rows2 = len(val_df_st)
+    #print(f"val df rows before merge {num_rows1} and after merge {num_rows2}")
 
     # standardize features
-    features_scaler = StandardScaler()
-    train_df_st.iloc[:, 10:] = features_scaler.fit_transform(train_df_st.iloc[:, 10:])
-    val_df_st.iloc[:, 10:] = features_scaler.transform(val_df_st.iloc[:, 10:])
+    #features_scaler = StandardScaler()
+    #train_df_st.iloc[:, 10:] = features_scaler.fit_transform(train_df_st.iloc[:, 10:])
+    #val_df_st.iloc[:, 10:] = features_scaler.transform(val_df_st.iloc[:, 10:])
 
-    print(f"train_df_st columns {train_df_st.columns}")
+    print(val_df.head())
+    print(train_df.feature_128.describe())
 
-    print(f"val_df_st columns {val_df_st.columns}")
-    print(val_df_st.head())
-
-    train_df_st.to_csv("train.csv", index=False)
-    val_df_st.to_csv("val.csv", index=False)
+    train_df.to_csv("train.csv", index=False)
+    val_df.to_csv("val.csv", index=False)
 
     train_paths = pd.read_csv("train.csv")
 
@@ -244,7 +261,7 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     print(train_paths.label.value_counts())
 
     minority_class_weight = len(train_paths) / (2 * len(train_paths[train_paths.label == 1]))
-    print("Suggested class weight: ", {minority_class_weight})
+    logger.info("Suggested class weight (before under- or oversampling): ", {minority_class_weight})
 
     val_paths = pd.read_csv("val.csv")
     print("Images per class in val set (ratios and total number):")
@@ -255,15 +272,15 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     return train_paths, val_paths
 
 
-def create_file_paths_simclr(image_directory_2019, metadata_path_2019, groundtruth_path_2019,
-                             image_directory_2020, metadata_path_2020, duplicates_path_2020):
+def create_file_paths_simclr():
 
-    metadata_2019 = preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_path_2019)
-    metadata_2020 = preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_path_2020)
-    combined_df = combine_datasets(metadata_2019, metadata_2020)
+    #metadata_2019 = preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_path_2019)
+    #metadata_2020 = preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_path_2020)
+    #combined_df = combine_datasets(metadata_2019, metadata_2020)
 
-    file_paths_simclr = combined_df["image_path"]
-    file_paths_simclr.to_csv("file_paths_all.csv", index=False)
+    train_paths = pd.read_csv("train.csv") # combined_df["image_path"]
+    file_paths_simclr = train_paths["image_path"]
+    file_paths_simclr.to_csv("file_paths_simclr.csv", index=False)
 
     return file_paths_simclr
 
@@ -279,7 +296,7 @@ def oversample_minority(train_paths, oversampling_factor):
     logger.info(f"Minority ratio in train list after oversampling: {new_minority_ratio}")
     logger.info(f"Total samples after oversampling: {train_paths_new.shape[0]}")
     logger.info(f"Total benign samples after oversampling: {train_paths_new[train_paths_new.label == 0].shape[0]}")
-    logger.info(f"Total melanoma samples after oversampling: {train_paths_new[train_paths_new.label == 1].shape[0]}")
+    logger.info(f"Total cancer samples after oversampling: {train_paths_new[train_paths_new.label == 1].shape[0]}")
 
     minority_class_weight = len(train_paths_new) / (2 * len(train_paths_new[train_paths_new.label == 1]))
     print("Suggested class weight after oversampling: ", {minority_class_weight})
@@ -306,7 +323,7 @@ def undersample_majority(train_paths, undersampling_factor):
     logger.info(f"Maj ratio in train list after undersampling: {new_maj_ratio}")
     logger.info(f"Total samples after undersampling: {train_paths_new.shape[0]}")
     logger.info(f"Total benign samples after undersampling: {maj_samples_after}")
-    logger.info(f"Total melanoma samples after undersampling: {train_paths_new[train_paths_new.label == 1].shape[0]}")
+    logger.info(f"Total cancer samples after undersampling: {train_paths_new[train_paths_new.label == 1].shape[0]}")
 
     # minority_class_weight = len(train_paths_new) / (2 * len(train_paths_new[train_paths_new.label == 1]))
     # print("Suggested class weight after oversampling: ", {minority_class_weight})
@@ -314,3 +331,10 @@ def undersample_majority(train_paths, undersampling_factor):
     train_paths_new.to_csv("train_undersampled.csv", index=False)
 
     return train_paths_new
+
+
+preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_path_2019)
+preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_path_2020)
+create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_path_2019,
+                          image_directory_2020, metadata_path_2020, duplicates_path_2020,
+                          features_output)

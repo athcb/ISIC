@@ -16,10 +16,11 @@ ground_truth_2019 = pd.read_csv("../ISIC_data/ISIC_2019_Training_GroundTruth.csv
 metadata_2019 = pd.read_csv("../ISIC_data/ISIC_2019_Training_Metadata.csv")
 ground_truth_2019 = ground_truth_2019[~ground_truth_2019.image.str.contains("_downsampled")]
 ground_truth_2019["target"] = ground_truth_2019.MEL.apply(lambda x: 1 if x == 1 else 0)
-gt_metadata_2019 = pd.merge(ground_truth_2019[["image", "target"]], metadata_2019, on="image", how="left")
+
+gt_metadata_2019 = pd.merge(ground_truth_2019[["image", "target", "BCC", "SCC", "AK", "MEL"]], metadata_2019, on="image", how="left")
 gt_metadata_2019["image_path"] = image_directory_2019 + gt_metadata_2019["image"] + ".jpg"
 
-image_paths = gt_metadata_2019[gt_metadata_2019.lesion_id == "BCN_0000011"]
+image_paths = gt_metadata_2019[gt_metadata_2019.MEL == 1]
 for i in range(len(image_paths)):
     path =image_paths.image_path.iloc[i]
     target = image_paths.target.iloc[i]

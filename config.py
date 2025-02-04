@@ -2,7 +2,7 @@ from scipy.stats import loguniform
 
 # directory of training images
 image_directory_2020 = "../ISIC_data/ISIC_2020_Training_JPEG/train"
-image_directory_2019 = "../ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training_Input/"
+image_directory_2019 = "../ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training_Input"
 
 # path to metadata file
 metadata_path_2020 = "../ISIC_data/ISIC_2020_Training_GroundTruth_v2.csv"
@@ -26,6 +26,8 @@ output_model = "./training_results/model.keras"
 # csv containing the training history on an epoch level for visualisations
 output_training_history1 = "./training_results/training_history_phase1.csv"
 output_training_history2 = "./training_results/training_history_phase2.csv"
+output_training_history3 = "./training_results/training_history_phase3.csv"
+output_training_history4 = "./training_results/training_history_phase4.csv"
 
 # Parameter grid for model without transfer learning
 param_grid = {"img_size": [224],
@@ -57,24 +59,54 @@ param_grid = {"img_size": [224],
 # Parameter grid for model with transfer learning
 param_grid_tl = {"img_size": [224],
               "num_channels": [3],
-              "dropout_val": [0.3, 0.4, 0.5], # dropout value for fully connected dense layers
+              #"dropout_val": [0.3, 0.4, 0.5, 0.6], # dropout value for fully connected dense layers
+              "dropout_val": [0.5],
               "num_dense_units": [[256, 64],  [256, 128], [512], [256], [128], [512, 128], [128, 64]], # number of units in the FC layers after the conv layers (length of list also defines number of FC layers)
               "activation_dense": ["relu"], # activation function in the FC layers
-              "l2_reg_dense": [0.00005, 0.0001, 0.00025, 0.0005, 0.00075, 0.001 ], #loguniform(1e-5, 1e-3), #L2 regularization in the FC layers
+              "l2_reg_dense": [0.00001, 0.00005, 0.0001, 0.00025, 0.0005, 0.00075], #loguniform(1e-5, 1e-3), #L2 regularization in the FC layers
               "nodes_output": [1], # number of nodes in the output layer (1 for binary classification, else number of classes)
               "activation_output": ["sigmoid"], # activation function for the output layer (sigmoid for binary classification, softmax for multi-classification)
               #"learning_rate": loguniform(1e-4, 1e-3), # learning rate for gradient descent
-              "learning_rate": [0.00001, 0.000025, 0.00005, 0.000075, 0.0001], #loguniform(1e-5, 1e-4), # learning rate for gradient descent
-              "num_epochs": [20], # number of training epochs
-              "weight_positive": [1.], # weight for the minority (positive) class in case of imbalanced datasets
+              "learning_rate": [0.000005, 0.00001, 0.000025, 0.00005, 0.000075], #loguniform(1e-5, 1e-4), # learning rate for gradient descent
+              "num_epochs": [15], # number of training epochs
+              "weight_positive": [1.5], # weight for the minority (positive) class in case of imbalanced datasets
               "alpha": [1.],
               "gamma": [0.],
               "num_dense_units_metadata": [[128, 64], [64, 32], [256], [128], [64]],
               "num_dense_units_features": [[256, 128], [128, 64], [64, 32], [256], [128], [64]],
               "num_dense_units_combined": [[256, 128], [128, 64], [64, 32], [256], [128], [64]],
-              "num_unfrozen_layers":[2],
               "decay_rate": [0.9, 0.95],
               "pooling_type": ["global_avg", "global_max"],
               "batch_norm": [1],
-              "lr_scaling_factor_phase2": [0.8, 1., 1.2]
-              }
+              "lr_scaling_factor_phase2": [0.1],
+              "lr_scaling_factor_phase3": [0.05],
+              "lr_scaling_factor_phase4": [0.01],
+              "pretrained_model": ["vgg16", "densenet121"],
+              "crop_size": [200]}
+
+
+param_final = {"img_size": [224],
+              "num_channels": [3],
+              "dropout_val": [0.25],
+              "num_dense_units": [[512, 128]], # number of units in the FC layers after the conv layers (length of list also defines number of FC layers)
+              "activation_dense": ["relu"], # activation function in the FC layers
+              "l2_reg_dense": [0.00001],  #L2 regularization in the FC layers
+              "nodes_output": [1], # number of nodes in the output layer (1 for binary classification, else number of classes)
+              "activation_output": ["sigmoid"], # activation function for the output layer (sigmoid for binary classification, softmax for multi-classification)
+              #"learning_rate": loguniform(1e-4, 1e-3), # learning rate for gradient descent
+              "learning_rate": [0.00008], #loguniform(1e-5, 1e-4), # learning rate for gradient descent
+              "num_epochs": [12], # number of training epochs
+              "weight_positive": [1.], # weight for the minority (positive) class in case of imbalanced datasets
+              "alpha": [1.],
+              "gamma": [0.],
+              "num_dense_units_metadata": [[128]],
+              "num_dense_units_features": [[128]],
+              "num_dense_units_combined": [[256]],
+              "decay_rate": [0.95],
+              "pooling_type": ["global_avg"],
+              "batch_norm": [1],
+              "lr_scaling_factor_phase2": [0.1],
+              "lr_scaling_factor_phase3": [0.05],
+              "lr_scaling_factor_phase4": [0.01],
+              "pretrained_model": ["densenet121"],
+              "crop_size": [200]}
