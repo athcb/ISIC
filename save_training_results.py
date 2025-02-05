@@ -11,9 +11,9 @@ def calculate_f1_score(precision, recall):
     return f1_score
 
 
-def save_training_results(model, history_phase1, history_phase2, history_phase3, history_phase4,
+def save_training_results(model, history_phase1, history_phase2, history_phase3,
                           output_training_history1, output_training_history2, output_training_history3,
-                          output_training_history4, output_model):
+                          output_model):
     if os.path.exists(output_training_history1):
         logger.info("Training history already exists.")
     else:
@@ -23,7 +23,6 @@ def save_training_results(model, history_phase1, history_phase2, history_phase3,
         phase1_metrics = history_phase1.history
         phase2_metrics = history_phase2.history
         phase3_metrics = history_phase3.history
-        phase4_metrics = history_phase4.history
 
         data_phase1 = {"epoch": list(range(1, len(phase1_metrics["loss"]) + 1)),
                        "loss": phase1_metrics["loss"],
@@ -79,31 +78,12 @@ def save_training_results(model, history_phase1, history_phase2, history_phase3,
                        "val_accuracy": phase3_metrics["val_accuracy"]
                        }
 
-        data_phase4 = {"epoch": list(range(1, len(phase3_metrics["loss"]) + 1)),
-                       "loss": phase4_metrics["loss"],
-                       "val_loss": phase4_metrics["val_loss"],
-                       "precision": phase4_metrics["precision"],
-                       "val_precision": phase4_metrics["val_precision"],
-                       "recall": phase4_metrics["recall"],
-                       "val_recall": phase4_metrics["val_recall"],
-                       "f1_score": calculate_f1_score(phase4_metrics["precision"], phase4_metrics["recall"]),
-                       "val_f1_score": calculate_f1_score(phase4_metrics["val_precision"],
-                                                          phase4_metrics["val_recall"]),
-                       "auc_pr": phase4_metrics["auc_pr"],
-                       "val_auc_pr": phase4_metrics["val_auc_pr"],
-                       "auc": phase4_metrics["auc_pr"],
-                       "val_auc": phase4_metrics["val_auc"],
-                       "accuracy": phase4_metrics["accuracy"],
-                       "val_accuracy": phase4_metrics["val_accuracy"]
-                       }
-
         metrics_phase1 = pd.DataFrame(data_phase1)
         metrics_phase2 = pd.DataFrame(data_phase2)
         metrics_phase3 = pd.DataFrame(data_phase3)
-        metrics_phase4 = pd.DataFrame(data_phase4)
+
         metrics_phase1.to_csv(output_training_history1, index=False)
         metrics_phase2.to_csv(output_training_history2, index=False)
         metrics_phase3.to_csv(output_training_history3, index=False)
-        metrics_phase4.to_csv(output_training_history4, index=False)
 
-        logger.info("Training history for phase 1, 2, 3 and 4 saved to file.")
+        logger.info("Training history for phase 1, 2, 3 saved to file.")

@@ -7,6 +7,8 @@ import tensorflow as tf
 from tensorflow.keras.applications.resnet50 import preprocess_input as resnet50_preprocess_input
 from tensorflow.keras.applications.densenet import preprocess_input as densenet_preprocess_input
 from tensorflow.keras.applications.vgg16 import preprocess_input as vgg16_preprocess_input
+from tensorflow.keras.applications.efficientnet import preprocess_input as efficientnet_preprocess_input
+from tensorflow.keras.layers import RandomRotation
 
 logger = logging.getLogger("MainLogger")
 
@@ -17,18 +19,21 @@ def load_image_metadata(file_path, label, image_weight, metadata, features, pret
     img = tf.image.resize(img, size=[img_size, img_size])
     return {"input_image": img, "input_metadata": metadata, "input_features": features}, label, image_weight
 
-
-def augment_image(inputs, labels, image_weight, img_size, crop_size):
+random_rot = RandomRotation(factor=0.2)
+def augment_image(inputs, labels, image_weight, img_size, crop_size, num_channels):
     img = inputs["input_image"]
     metadata = inputs["input_metadata"]
     features = inputs["input_features"]
     img = tf.image.random_flip_left_right(img)
     img = tf.image.random_flip_up_down(img)
+    img = random_rot(img, training=True)
     img = tf.image.rot90(img, k=tf.random.uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
-    img = tf.image.random_brightness(img, max_delta=0.1)
+    img = tf.image.random_saturation(img, lower=0.8, upper=1.2)
+    img = tf.image.random_brightness(img, max_delta=0.2)
+    img = tf.image.random_contrast(img, lower=0.8, upper=1.2)
     img = tf.image.random_crop(img, size=[crop_size, crop_size, num_channels])
     img = tf.image.resize(img, size=[img_size, img_size])
-    img = dropout(img, dim=img_size, probability=0.75, ct=6, sz=0.1)
+    img = dropout(img, DIM=img_size, PROBABILITY=0.75, CT=6, SZ=0.1)
     return {"input_image": img, "input_metadata": metadata, "input_features": features}, labels, image_weight
 
 
@@ -56,7 +61,7 @@ def create_train_val_datasets(file_paths, labels, image_weight, metadata, featur
         logger.info("Starting augmentation (training set)...")
         # dataset = dataset.map(augment_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.map(
-            lambda inputs, labels, image_weight: augment_image(inputs, labels, image_weight, img_size, crop_size),
+            lambda inputs, labels, image_weight: augment_image(inputs, labels, image_weight, img_size, crop_size, num_channels),
             num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.map(
             lambda inputs, labels, image_weight: preprocess_input_model(inputs, labels, image_weight, pretrained_model),

@@ -5,7 +5,7 @@ import ast
 from tensorflow.keras.callbacks import EarlyStopping
 
 from create_datasets import create_train_val_datasets
-from build_model import build_model_phase4,build_model_phase3, build_model_phase1, build_model_phase2
+from build_conv_model import build_model_phase4,build_model_phase3, build_model_phase1, build_model_phase2
 from fit_model import fit_model
 import numpy as np
 from sklearn.metrics import precision_recall_curve, f1_score, precision_score, recall_score
@@ -19,13 +19,13 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     params = best_params.iloc[0]
     img_size = int(params["img_size"])
     num_channels = int(params["num_channels"])
-    dropout_val = 0.25  # float(params["dropout_val"])
+    dropout_val = 0.3  # float(params["dropout_val"])
     num_dense_units = ast.literal_eval(params["num_dense_units"])
     activation_dense = params["activation_dense"]
-    l2_reg_dense = 0.00001  # float(params["l2_reg_dense"])
+    l2_reg_dense = 0.00005  # float(params["l2_reg_dense"])
     nodes_output = int(params["nodes_output"])
     activation_output = params["activation_output"]
-    learning_rate = 0.00008  # float(params["learning_rate"])
+    learning_rate = 0.0001  # float(params["learning_rate"])
     # learning_rate = 0.0001 # float(params["learning_rate"])
     alpha = 0.5  # float(params["alpha"])
     gamma = 2.  # float(params["gamma"])
@@ -38,9 +38,9 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     num_unfrozen_layers = int(params["num_unfrozen_layers"])
     decay_rate = float(params["decay_rate"])
     batch_norm = int(params["batch_norm"])
-    lr_scaling_factor_phase2 = 0.1
-    lr_scaling_factor_phase3 = 0.05
-    lr_scaling_factor_phase4 = 0.02
+    lr_scaling_factor_phase2 = 0.5  # 0.1
+    lr_scaling_factor_phase3 = 0.3
+    lr_scaling_factor_phase4 = 0.1
     pretrained_model = "densenet121"
     crop_size = 200
 
@@ -82,7 +82,7 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
                                                        img_size=img_size,
                                                        num_channels=num_channels,
                                                        crop_size=crop_size,
-                                                       training=False) # set to False for validation set)
+                                                       training=False)  # set to False for validation set)
 
     logger.info("Feature Extraction Phase 1: Training the dense layers")
     model, base_model = build_model_phase1(img_size=img_size,
@@ -102,6 +102,8 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
                                            num_dense_units_combined=num_dense_units_combined,
                                            pooling_type=pooling_type,
                                            batch_norm=batch_norm,
+                                           decay_steps=train_steps,
+                                           decay_rate=decay_rate,
                                            pretrained_model=pretrained_model)
 
     early_stop = EarlyStopping(monitor="val_auc_pr", mode="max", verbose=1, patience=10)
@@ -122,7 +124,7 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     logger.info(
         f"Phase 1 F1 Score: {2 * (val_precision * val_recall) / (val_precision + val_recall + tf.keras.backend.epsilon())}")
 
-    logger.info(f"Fine Tuning Phase 2: Training the last {num_unfrozen_layers} Convolutional layers")
+    logger.info(f"Fine Tuning Phase 2:")
 
     model = build_model_phase2(model,
                                base_model,
@@ -150,17 +152,17 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     logger.info(
         f"Phase 2 F1 Score: {2 * (val_precision * val_recall) / (val_precision + val_recall + tf.keras.backend.epsilon())}")
 
-    logger.info(f"Fine Tuning Phase 3: Training the last {num_unfrozen_layers} Convolutional layers")
+    logger.info(f"Fine Tuning Phase 3:")
 
     model = build_model_phase3(model,
-                                         base_model,
-                                         learning_rate=learning_rate,
-                                         alpha=alpha,
-                                         gamma=gamma,
-                                         decay_steps=train_steps,
-                                         decay_rate=decay_rate,
-                                         lr_scaling_factor_phase3=lr_scaling_factor_phase3,
-                                         pretrained_model=pretrained_model)
+                               base_model,
+                               learning_rate=learning_rate,
+                               alpha=alpha,
+                               gamma=gamma,
+                               decay_steps=train_steps,
+                               decay_rate=decay_rate,
+                               lr_scaling_factor_phase3=lr_scaling_factor_phase3,
+                               pretrained_model=pretrained_model)
 
     model, history_phase3 = fit_model(model,
                                       train_dataset=train_dataset,
@@ -179,83 +181,4 @@ def train_model(train_paths, val_paths, output_best_params, batch_size):
     logger.info(
         f"Phase 3 F1 Score: {2 * (val_precision * val_recall) / (val_precision + val_recall + tf.keras.backend.epsilon())}")
 
-    logger.info(f"Fine Tuning Phase 4: Training the last {num_unfrozen_layers} Convolutional layers")
-
-    model = build_model_phase4(model,
-                                         base_model,
-                                         learning_rate=learning_rate,
-                                         alpha=alpha,
-                                         gamma=gamma,
-                                         num_unfrozen_layers=num_unfrozen_layers,
-                                         decay_steps=train_steps,
-                                         decay_rate=decay_rate,
-                                         lr_scaling_factor_phase4=lr_scaling_factor_phase4,
-                                         pretrained_model=pretrained_model)
-
-    model, history_phase4 = fit_model(model,
-                                      train_dataset=train_dataset,
-                                      steps_per_epoch=train_steps,
-                                      validation_dataset=val_dataset,
-                                      validation_steps=val_steps,
-                                      num_epochs=num_epochs // 2,
-                                      weight_positive=weight_positive,
-                                      callbacks=[early_stop],
-                                      verbose=1)
-
-    val_loss, val_precision, val_recall, val_auc_pr, val_accuracy, val_auc = model.evaluate(val_dataset)
-
-    logger.info(
-        f"Val dataset overall results Phase 4: loss: {val_loss}, precision: {val_precision}, recall: {val_recall}, auc pr: {val_auc_pr}, accuracy: {val_accuracy}, auc: {val_auc}")
-    logger.info(
-        f"Phase 4 F1 Score: {2 * (val_precision * val_recall) / (val_precision + val_recall + tf.keras.backend.epsilon())}")
-
-    y_prob = []  # List to store the predicted probabilities for the positive class (class 1)
-    y_true = []  # List to store the true labels
-
-    # Iterate through the tf.data.Dataset to get predictions batch by batch
-    for inputs, batch_labels in val_dataset:
-        batch_data = inputs["input_image"]
-    batch_metadata = inputs["input_metadata"]
-    # Ensure the model is receiving both image and metadata inputs
-    batch_probs = model.predict(inputs, verbose=0)  # Using list for multi-input model
-
-    y_prob.extend(batch_probs)  # Assuming class 1 is the positive class
-    y_true.extend(batch_labels.numpy())  # Store true labels
-
-    # Convert y_true and y_prob to numpy arrays for further processing
-    y_true = np.array(y_true)
-    y_prob = np.array(y_prob)
-
-    # Now you can use y_prob and y_true to calculate precision, recall, F1 score, etc.
-    thresholds = np.arange(0.0, 1.0, 0.01)
-    f1_scores = []
-    precision_scores = []
-    recall_scores = []
-
-    # Loop through different thresholds and compute metrics
-    for threshold in thresholds:
-    # Predict classes based on the threshold
-        y_pred = (y_prob >= threshold).astype(int)
-
-    # Calculate precision, recall, and F1 score for the current threshold
-    precision = precision_score(y_true, y_pred)
-    recall = recall_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred)
-
-    # Store the results
-    f1_scores.append(f1)
-    precision_scores.append(precision)
-    recall_scores.append(recall)
-
-    # Find the threshold that gives the highest F1 score
-    best_threshold = thresholds[np.argmax(f1_scores)]
-    best_precision = precision_scores[np.argmax(f1_scores)]
-    best_recall = recall_scores[np.argmax(f1_scores)]
-    best_f1_score = max(f1_scores)
-
-    print(f"Best Threshold: {best_threshold}")
-    print(f"Best F1 Score: {best_f1_score}")
-    print(f"Best Precision Score: {best_precision}")
-    print(f"Best Recall Score: {best_recall}")
-
-    return model, history_phase1, history_phase2, history_phase3, history_phase4
+    return model, history_phase1, history_phase2, history_phase3

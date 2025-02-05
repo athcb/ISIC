@@ -6,28 +6,32 @@ image_directory_2019 = "../ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training
 
 # path to metadata file
 metadata_path_2020 = "../ISIC_data/ISIC_2020_Training_GroundTruth_v2.csv"
-duplicates_path_2020 = "ISIC_2020_Training_Duplicates.csv"
+duplicates_path_2020 = "../ISIC_data/ISIC_2020_Training_Duplicates.csv"
 metadata_path_2019 = "../ISIC_data/ISIC_2019_Training_Metadata.csv"
 groundtruth_path_2019 = "../ISIC_data/ISIC_2019_Training_GroundTruth.csv"
 
 # path to features from simclr model
-features_output = "simclr_features.csv"
-simclr_history_output = "simclr_training_history.csv"
+features_output = "../ISIC_data/simclr_results/simclr_features.csv"
+simclr_history_output = "../ISIC_data/simclr_results/simclr_training_history.csv"
+simclr_image_paths = "../ISIC_data/simclr_results/file_paths_simclr.csv"
 
 # define paths for csv files containing the results of randomised hyperparameter search
-output_best_params = "./search_results/search_best_params.csv"
-output_mean_scores = "./search_results/search_mean_scores.csv"
-output_val_scores = "./search_results/search_val_scores.csv"
-all_itr_results = "./search_results/all_itr_results.csv"
+output_best_params = "../ISIC_data/search_results/search_best_params.csv"
+output_mean_scores = "../ISIC_data/search_results/search_mean_scores.csv"
+output_val_scores = "../ISIC_data/search_results/search_val_scores.csv"
+all_itr_results = "../ISIC_data/search_results/all_itr_results.csv"
+
+# 5fold CV
+all_fold_results = "../ISIC_data/cv/all_fold_results.csv"
 
 # path to save model
-output_model = "./training_results/model.keras"
+output_model = "../ISIC_data/training_results/model.keras"
 
 # csv containing the training history on an epoch level for visualisations
-output_training_history1 = "./training_results/training_history_phase1.csv"
-output_training_history2 = "./training_results/training_history_phase2.csv"
-output_training_history3 = "./training_results/training_history_phase3.csv"
-output_training_history4 = "./training_results/training_history_phase4.csv"
+output_training_history1 = "../ISIC_data/training_results/training_history_phase1.csv"
+output_training_history2 = "../ISIC_data/training_results/training_history_phase2.csv"
+output_training_history3 = "../ISIC_data/training_results/training_history_phase3.csv"
+output_training_history4 = "../ISIC_data/training_results/training_history_phase4.csv"
 
 # Parameter grid for model without transfer learning
 param_grid = {"img_size": [224],

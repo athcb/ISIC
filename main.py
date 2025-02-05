@@ -33,13 +33,12 @@ from tensorflow.keras import mixed_precision
 from create_train_val_list import create_train_val_list, oversample_minority, undersample_majority, create_file_paths_simclr
 from create_datasets import create_train_val_datasets, create_dataset_simclr
 from randomised_search import randomised_search
-from randomised_search_tl import randomised_search_tl
 from save_randomised_search_results import save_randomised_search_results
 from train_model import train_model
 from save_training_results import save_training_results
-from create_history_plots import create_history_plots
+from create_performance_plots import create_performance_plots
 from config import param_grid_tl, param_grid, image_directory_2019, image_directory_2020, metadata_path_2020, metadata_path_2019, duplicates_path_2020, groundtruth_path_2019,  output_best_params, output_mean_scores, output_val_scores, output_model, output_training_history1, output_training_history2, features_output, simclr_history_output, output_training_history3, output_training_history4
-from simclr import save_simclr_training_history, build_simclr_model, extract_features, save_features
+from build_simclr_model import save_simclr_training_history, build_simclr_model, extract_features, save_features
 
 #logging.basicConfig(filename="model.log", level=logging.INFO)
 #logging.basicConfig(level = logging.INFO, format="%(asctime)s - %(levelname)s - %(lineno)d - %(message)s")
@@ -54,7 +53,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
 # handler for saving messages to log file
-file_handler = logging.FileHandler("model.log", mode="w")
+file_handler = logging.FileHandler("../ISIC_data/model.log", mode="w")
 file_handler.setLevel(logging.INFO)
 
 # format output of logger
@@ -100,9 +99,8 @@ def main():
     if not os.path.exists(features_output):
         file_paths_simclr = create_file_paths_simclr()
         simclr_dataset = create_dataset_simclr(file_paths_simclr, batch_size=batch_size_simclr)
-        logger.info(len(simclr_dataset))
         simclr_model = build_simclr_model(img_size=224, num_channels=3, learning_rate=0.002)
-        history = simclr_model.fit(simclr_dataset, epochs=1)
+        history = simclr_model.fit(simclr_dataset, epochs=20)
         save_simclr_training_history(history, simclr_history_output)
         features = extract_features(simclr_model, simclr_dataset, batch_size=batch_size_simclr)
         save_features(features, file_paths_simclr, features_output)
@@ -116,7 +114,7 @@ def main():
     # run randomised search with (stratified) kfold cross validation on the training dataset if the file with the randomised search results does not exist
     if not os.path.exists(output_best_params):
         logger.info("Starting randomised search for hyperparameter tuning..")
-        best_model, best_params, mean_scores_best_model, val_scores_best_model = randomised_search_tl(train_paths,
+        best_model, best_params, mean_scores_best_model, val_scores_best_model = randomised_search(train_paths,
                                                                                                       param_grid_tl,
                                                                                                       num_iter=num_iter,
                                                                                                       cvfolds=cvfolds,
@@ -129,14 +127,14 @@ def main():
 
     # train model with parameters from randomised search
     logger.info("Starting model training...")
-    model, history_phase1, history_phase2, history_phase3, history_phase4  = train_model(train_paths_oversampled, val_paths, output_best_params, batch_size = batch_size)
+    model, history_phase1, history_phase2, history_phase3  = train_model(train_paths_oversampled, val_paths, output_best_params, batch_size = batch_size)
 
     # save model and training history
     logger.info("Saving model and training history...")
-    save_training_results(model, history_phase1, history_phase2, history_phase3, history_phase4, output_training_history1, output_training_history2, output_training_history3, output_training_history4, output_model)
+    save_training_results(model, history_phase1, history_phase2, history_phase3, output_training_history1, output_training_history2, output_training_history3, output_model)
 
     # create plots with loss and custom metrics
-    create_history_plots(output_training_history1, output_training_history2, output_training_history3, output_training_history4)
+    create_performance_plots(output_training_history1, output_training_history2, output_training_history3)
 
 
 if __name__ == "__main__":
