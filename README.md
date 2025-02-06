@@ -64,6 +64,7 @@ You can download the ISIC 2020 dataset from the [ISIC Challenge website](https:/
 Both datasets are used to train the model for skin lesion classification. The ISIC 2020 dataset focuses on the melanomy cancerous lesion only while the ISIC 2019 dataset includes additional cancerous categories which can be leveraged for better generalization.
 The ISIC 2020 dataset contains approximately 27000 images of "unknown" diagnosis, which were not used for model training. Only lesions with an established diagnosis were used in the final dataset.
 Additionally, the ISIC 2019 dataset contains multiple images of the same lesions in different angles and lighting. While these provide valuable information we make sure that no data leakage of the same lesions across training and validation sets occurs.
+
 ---
 
 ### DL Frameworks 
