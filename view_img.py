@@ -10,6 +10,7 @@ os.environ["SM_FRAMEWORK"] = "tf.keras"
 from segmentation_models import Unet
 import tensorflow as tf
 
+"""
 image_directory_2019 = "../ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training_Input/"
 
 ground_truth_2019 = pd.read_csv("../ISIC_data/ISIC_2019_Training_GroundTruth.csv")
@@ -32,16 +33,17 @@ for i in range(len(image_paths)):
     #plt.text(img_width * 0.05, img_height * 0.10, benign_malignant, fontsize=10, color="black", backgroundcolor="white", ha="center")
     plt.axis("off")
     plt.show()
-
+"""
 
 metadata_path = "../ISIC_data/ISIC_2020_Training_GroundTruth.csv"
 metadata = pd.read_csv(metadata_path)
-metadata = metadata[metadata.target == 1 ]
+print(metadata.diagnosis.value_counts())
+metadata = metadata[metadata.diagnosis == "atypical melanocytic proliferation" ]
 metadata["image_path"] = '../ISIC_data/ISIC_2020_Training_JPEG/train/' + metadata['image_name'] + '.jpg'
-
+print(len(metadata))
 #select random image from a given diagnosis:
 for i in range(len(metadata)):
-    random_sample = metadata[metadata.diagnosis == "melanoma"].sample(1)
+    random_sample = metadata.sample(1)
     diagnosis = random_sample["diagnosis"].item()
     benign_malignant = random_sample["benign_malignant"].item()
     image_path = random_sample["image_path"].item()
@@ -111,7 +113,7 @@ for i in range(len(images_patient)):
 """
 
 
-
+"""
 # Load a test image
 #images_patient = metadata[metadata.patient_id == "IP_0038545"]
 print(metadata.head())
@@ -154,4 +156,4 @@ for i in range(len(images_patient)):
     plt.axis("off")
 
 
-    plt.show()
+    plt.show()"""

@@ -15,9 +15,13 @@ logger = logging.getLogger("MainLogger")
 def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_path_2019):
     ground_truth_2019 = pd.read_csv(groundtruth_path_2019)
     metadata_2019 = pd.read_csv(metadata_path_2019)
+
     metadata_2019 = metadata_2019.sort_values(by=["image", "lesion_id"])
     #metadata_2019["image_counter"] = metadata_2019.groupby("lesion_id").cumcount()
     #metadata_2019 = metadata_2019[(metadata_2019.image_counter == 0) | (metadata_2019.image_counter.isna()) ]
+
+    lesion_classes = ["MEL", "NV", "BCC", "AK", "BKL", "DF", "VASC", "SCC"]
+    ground_truth_2019["lesion_type"] = ground_truth_2019[lesion_classes].idxmax(axis=1)
 
     grouped_by_lesion = metadata_2019.groupby("lesion_id").agg(num_lesion_images = ("image", "count"))
     #print(grouped_by_lesion[grouped_by_lesion.num_lesion_images >20])
@@ -31,9 +35,8 @@ def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_p
     # create target column based on melanoma diagnosis
     ground_truth_2019["target"] = (ground_truth_2019.MEL == 1) | (ground_truth_2019.BCC == 1) | (ground_truth_2019.SCC == 1) | (ground_truth_2019.AK == 1)
 
-
     # merge dfs with ground truth and metadata
-    gt_metadata_2019 = pd.merge(ground_truth_2019[["image", "target"]], metadata_2019, on="image", how="left")
+    gt_metadata_2019 = pd.merge(ground_truth_2019[["image", "target", "lesion_type"]], metadata_2019, on="image", how="left")
     gt_metadata_2019["image_path"] = image_directory_2019 +  "/" + gt_metadata_2019["image"] + ".jpg"
     #print(len(gt_metadata_2019))
     # clean column: anatom_site_general
@@ -55,7 +58,7 @@ def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_p
     gt_metadata_2019.fillna({"age_approx": median_age}, inplace=True)
 
     # final df
-    gt_metadata_2019 = gt_metadata_2019[["image_path", "target", "sex", "age_approx", "site", "num_lesion_images", "lesion_id"]]
+    gt_metadata_2019 = gt_metadata_2019[["image_path", "target", "sex", "age_approx", "site", "num_lesion_images", "lesion_id", "lesion_type"]]
 
     # log overview
     total_samples = gt_metadata_2019.shape[0]
@@ -71,6 +74,21 @@ def preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_p
 def preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_path_2020):
     metadata_2020 = pd.read_csv(metadata_path_2020)
     duplicates_2020 = pd.read_csv(duplicates_path_2020)
+    print(metadata_2020.diagnosis.unique())
+
+    # map categpries to 2019 dataset
+    category_mapping = {
+        "melanoma": "MEL",
+        "nevus": "NV",
+        "seborrheic keratosis": "BKL",
+        "lichenoid keratosis": "BKL",
+        "solar lentigo": "BKL",
+        "lentigo NOS": "AK",
+        "atypical melanocytic proliferation": "AK",
+        "cafe-au-lait macule": "unknown",
+        "unknown": "unknown"}
+
+    metadata_2020["lesion_type"] = metadata_2020["diagnosis"].map(category_mapping)
 
     # remove duplicates from dataset
     metadata_2020 = pd.merge(metadata_2020, duplicates_2020["image_name_1"], left_on="image_name", right_on="image_name_1", how="left")
@@ -101,7 +119,7 @@ def preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_pa
                                                  "upper extremity": "upper_extremity"})
 
     # final df
-    metadata_2020 = metadata_2020[["image_path", "target", "sex", "age_approx", "site", "num_lesion_images", "lesion_id"]]
+    metadata_2020 = metadata_2020[["image_path", "target", "sex", "age_approx", "site", "num_lesion_images", "lesion_id", "lesion_type"]]
 
     # log overview
     total_samples = metadata_2020.shape[0]
@@ -116,6 +134,7 @@ def preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_pa
 
 def combine_datasets(metadata_2019, metadata_2020):
     combined_metadata = pd.concat([metadata_2019, metadata_2020], axis = 0).reset_index(drop=True)
+    print(combined_metadata.lesion_type.value_counts(normalize=True))
 
     total_samples = combined_metadata.shape[0]
     cancer_samples = sum(combined_metadata[combined_metadata.target ==1]["target"])
@@ -135,7 +154,7 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     combined_df = combine_datasets(metadata_2019, metadata_2020)
 
     # load features from simclr model
-    features_df = pd.read_csv(features_output)
+    #features_df = pd.read_csv(features_output)
 
     # one hot encode categorical variables
     combined_df = pd.get_dummies(combined_df,
@@ -170,6 +189,7 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     train_df = pd.DataFrame({"image_path": train_files["image_path"],
                              "label": train_files["target"],
                              "image_weight": 1./train_files["num_lesion_images"],
+                             "lesion_type":train_files["lesion_type"],
                              "sex": train_files["sex"],
                              "age_approx": train_files["age_approx"],
                              "site_lower_extremity": train_files["site_lower_extremity"],
@@ -192,8 +212,8 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
                            "site_unknown": val_files["site_unknown"]
                            })
 
-    train_df = pd.merge(train_df, features_df, on="image_path", how="left")
-    val_df = pd.merge(val_df, features_df, on="image_path", how="left")
+    #train_df = pd.merge(train_df, features_df, on="image_path", how="left")
+    #val_df = pd.merge(val_df, features_df, on="image_path", how="left")
 
     # standardise columns
     #ct = ColumnTransformer(transformers=[("scaler", StandardScaler(), ["age_approx"])],
@@ -203,9 +223,9 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     train_df["age_approx"] = age_scaler.fit_transform(train_df[["age_approx"]])
     val_df["age_approx"] = age_scaler.transform(val_df[["age_approx"]])
 
-    features_scaler = StandardScaler()
-    train_df.iloc[:, 11:] = features_scaler.fit_transform(train_df.iloc[:, 11:])
-    val_df.iloc[:, 11:] = features_scaler.transform(val_df.iloc[:, 11:])
+    #features_scaler = StandardScaler()
+    #train_df.iloc[:, 11:] = features_scaler.fit_transform(train_df.iloc[:, 11:])
+    #val_df.iloc[:, 11:] = features_scaler.transform(val_df.iloc[:, 11:])
 
 
     # standardise columns
@@ -215,16 +235,7 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     #train_df_st = pd.DataFrame(train_df_st, columns=["age_approx"] + list(train_df.columns.drop("age_approx")))
     #val_df_st = pd.DataFrame(val_df_st, columns=["age_approx"] + list(train_df.columns.drop("age_approx")))
 
-    correct_column_order = ["image_path",
-                            "label",
-                            "sex",
-                            "age_approx",
-                            "site_lower_extremity",
-                            "site_oral_genital",
-                            "site_palms_soles",
-                            "site_torso",
-                            "site_upper_extremity",
-                            "site_unknown"]
+
     #train_df_st = train_df_st[correct_column_order]
     #val_df_st = val_df_st[correct_column_order]
 
@@ -265,8 +276,7 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     #train_df_st.iloc[:, 10:] = features_scaler.fit_transform(train_df_st.iloc[:, 10:])
     #val_df_st.iloc[:, 10:] = features_scaler.transform(val_df_st.iloc[:, 10:])
 
-    print(val_df.head())
-    print(train_df.feature_128.describe())
+
 
     train_df.to_csv("../ISIC_data/train.csv", index=False)
     val_df.to_csv("../ISIC_data/val.csv", index=False)
@@ -280,7 +290,7 @@ def create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_
     minority_class_weight = len(train_paths) / (2 * len(train_paths[train_paths.label == 1]))
     logger.info("Suggested class weight (before under- or oversampling): ", {minority_class_weight})
 
-    val_paths = pd.read_csv("val.csv")
+    val_paths = pd.read_csv("../ISIC_data/val.csv")
     print("Images per class in val set (ratios and total number):")
     print(val_paths.label.value_counts(normalize=True))
     print(val_paths.label.value_counts())
@@ -303,7 +313,18 @@ def create_file_paths_simclr(simclr_image_paths):
 
 def oversample_minority(train_paths, oversampling_factor):
     majority_samples = train_paths[train_paths.label == 0]
-    minority_samples = train_paths[train_paths.label == 1]
+
+    #balance classes
+    ak_samples = train_paths[train_paths.lesion_type == "AK"]
+    scc_samples = train_paths[train_paths.lesion_type == "SCC"]
+    mel_samples = train_paths[train_paths.lesion_type == "MEL"]
+    bcc_samples = train_paths[train_paths.lesion_type == "BCC"]
+
+    minority_samples = pd.concat([ak_samples] * 4 + [scc_samples] * 6 + [mel_samples] + [bcc_samples], ignore_index=True)
+    print(minority_samples.lesion_type.value_counts(normalize=True))
+
+    #minority_samples = train_paths_new[train_paths_new.label == 1]
+
     train_paths_new = pd.concat([majority_samples] + [minority_samples] * oversampling_factor, ignore_index=True)
 
     train_paths_new = train_paths_new.sample(frac=1).reset_index(drop=True)
@@ -351,6 +372,7 @@ def undersample_majority(train_paths, undersampling_factor):
 
 preprocess_data_2019(image_directory_2019, metadata_path_2019, groundtruth_path_2019)
 preprocess_data_2020(image_directory_2020, metadata_path_2020, duplicates_path_2020)
-create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_path_2019,
+train_paths, val_paths = create_train_val_list(image_directory_2019, metadata_path_2019, groundtruth_path_2019,
                           image_directory_2020, metadata_path_2020, duplicates_path_2020,
                           features_output)
+oversample_minority(train_paths, 2)

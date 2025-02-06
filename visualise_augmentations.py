@@ -103,7 +103,7 @@ print(grouped_by_lesion[grouped_by_lesion.num_lesion_images >20])
 
 metadata_2019 = pd.merge(metadata_2019, grouped_by_lesion["num_lesion_images"], on="lesion_id", how="left")
 metadata_2019["image_path"] = "../ISIC_data/ISIC_2019_Training_Input/ISIC_2019_Training_Input" + "/" + metadata_2019["image"] + ".jpg"
-metadata_2019 = metadata_2019[metadata_2019.lesion_id =="BCN_0001728"]
+metadata_2019 = metadata_2019[metadata_2019.lesion_type =="NV"]
 num_images = 5
 for i in range(len(metadata_2019)//num_images):
 

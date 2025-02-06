@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/ISIC.iml" filepath="$PROJECT_DIR$/.idea/ISIC.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/SkinLesionClassification.iml" filepath="$PROJECT_DIR$/.idea/SkinLesionClassification.iml" />
     </modules>
   </component>
 </project>
