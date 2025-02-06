@@ -9,13 +9,12 @@ The goal is to develop a robust model leveraging a combination of **CNN, unsuper
 ---
 
 ## Table of Contents
-- [Dataset](#dataset)
-- [Installation](#installation)
+- [Dataset](#datasets)
+- [Additional Features](#additional-features)
 - [Usage](#usage)
 - [Model Training](#model-training)
 - [Evaluation](#evaluation)
 - [Results](#results)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -61,6 +60,7 @@ Potential pre-cancerous lesions: Lentigo NOS, Atypical melanocytic proliferation
 You can download the ISIC 2020 dataset from the [ISIC Challenge website](https://www.isic-archive.com).
 
 ### Combined Usage
+
 Both datasets are used to train the model for skin lesion classification. The ISIC 2020 dataset focuses on the melanomy cancerous lesion only while the ISIC 2019 dataset includes additional cancerous categories which can be leveraged for better generalization.
 The ISIC 2020 dataset contains approximately 27000 images of "unknown" diagnosis, which were not used for model training. Only lesions with an established diagnosis were used in the final dataset.
 Additionally, the ISIC 2019 dataset contains multiple images of the same lesions in different angles and lighting. While these provide valuable information we make sure that no data leakage of the same lesions across training and validation sets occurs.
@@ -77,6 +77,9 @@ This project uses Tensorflow for the data and CNN pipeline.
 Different techniques were implemented to handle the class imbalance of the combined dataset. 
 - Oversampling of minority class with augmentations to create a balanced dataset. 
 - Augmentations including rotations, random crop, brightness / contrast adjustments and coarse dropout. 
+
+Focal loss and class weights were tested as alternatives to or in combination with oversampling but did not yield better results.
+
 ---
 
 ### Image cleaning
@@ -89,11 +92,11 @@ The inpainting method also removed some of the image artefacts such as digital r
 --- 
 
 ## Additional features
-## Patient Metadata
+### Patient Metadata
 
 Patient metadata was integrated with CNN features in the fully connected layers. 
 
-## Pretraining with SimCLR Self-Supervised Learning
+### Pretraining with SimCLR Self-Supervised Learning
 
 By pretraining on the training set images, SimCLR extracts high-level image representations that capture meaningful patterns and variations in the data. 
 These learned features are then incorporated into the final model, along with patient metadata and CNN features. 
@@ -101,7 +104,7 @@ These learned features are then incorporated into the final model, along with pa
 ---
 
 ## Model Training
-The model was trained by fine-tuning various deep learning architectures with pre-trained ImageNet weights to compare performance and test ensemble predictions:
+The model was trained by fine-tuning various deep learning architectures with pre-trained ImageNet weights to compare performance and test ensemble predictions.
 - **ResNet-50** (used for pre-training only / self-supervised learning using SimCLR)
 - **EfficientNet-B4**
 - **DenseNet121**  
@@ -110,9 +113,14 @@ The model was trained by fine-tuning various deep learning architectures with pr
 
 Image pre-processing was performed according to the requirements of each of the pre-trained models used. 
 
+The models were trained on AWS's g4dn.4xlarge instance.
+
 ---
 
 ## Evaluation
+
+The optimal hyperparameters are found via randomised search and cross-validation on the training set. 
+
 The model is evaluated based on:
 - **F1 Score**
 - **Precision & Recall**
@@ -123,13 +131,13 @@ The model is evaluated based on:
 ---
 
 ## Results
-| Model                            | Accuracy | F1 Score | AUC | AUC PR | Precision | Recall |
-|----------------------------------|----------|---------|-----| ----| -----| ----|
-| DenseNet121                      | 85.2%    | 0.78    | 0.92 | 0.92 |  0.92 | 0.92 |
-| DenseNet169                      | 85.2%    | 0.78    | 0.92 | 0.92 | 0.92 | 0.92 |
-| EfficientNet-B4                  | 88.5% | 0.81    | 0.94 | 0.94 | 0.94 | 0.94 |
-| VGG-16                           | | | |  | | | 
-| Ensemble (ResNet + EfficientNet) | **90.1%** | **0.83** | **0.96** |**0.96** |  **0.96** |**0.96** |
+** Ongoing **
+| Model                           | Accuracy | F1 Score | AUC | AUC PR | Precision | Recall |
+|---------------------------------|----------|---------|-----| ----| -----| ----|
+| DenseNet121                     |     |   |  |  |   |  |
+| DenseNet169                     |    |    |  |  |  |  |
+| EfficientNet-B4                 |  |    |  |  |  |  |
+| Ensemble |  |  |  || | |
 
 ---
 
@@ -138,7 +146,7 @@ Here’s a professional and well-structured **License & Citation** section for y
 
 ---
 
-## License & Citation  
+### License & Citation  
 
 This project uses the **ISIC 2019** and **ISIC 2020** Challenge Datasets, which are licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License (CC-BY-NC 4.0)**.  
 
