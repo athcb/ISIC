@@ -132,22 +132,23 @@ The model is evaluated based on:
 ---
 
 ## Results
-** Ongoing **
-| Model                           | Accuracy | F1 Score | AUC | AUC PR | Precision | Recall |
-|---------------------------------|----------|---------|-----| ----| -----| ----|
-| DenseNet121                     |     |   |  |  |   |  |
-| DenseNet169                     |    |    |  |  |  |  |
-| EfficientNet-B4                 |  |    |  |  |  |  |
-| Ensemble |  |  |  || | |
+** Ongoing / Preliminary results **
 
+|    | Model              | AUC      | AUC PR   | F1 Score (thr. 0.5) | Precision (thr. 0.5) | Recall (thr. 0.5) | Accuracy (thr. 0.5) | F1 Score (opt. threshold) | Precision (opt. threshold) | Recall (opt. threshold) | Accuracy (opt. threshold) |
+|----|--------------------|----------|----------|---------------------|----------------------|-------------------|---------------------|---------------------------|----------------------------|-------------------------|---------------------------|
+| #1 | DenseNet121        | 0.92     | 0.85     | 0.77                | 0.76                 | 0.79              | 0.85                | **0.78**                  | **0.74**                   | **0.83**                | **0.85**                  |
+| #2 | DenseNet169        | 0.92     | 0.83     | 0.75                | 0.79                 | 0.71              | 0.84                | 0.77                      | 0.71                       | 0.85                    | 0.83                      |
+| #3 | EfficientNetB4     | 0.90     | 0.82     | 0.75                | 0.75                 | 0.74              | 0.83                | 0.75                      | 0.68                       | 0.85                    | 0.82                      |
+| #4 | VGG16              | 0.90     | 0.81     | 0.75                | 0.70                 | 0.80              | 0.82                | 0.75                      | 0.68                       | 0.73                    | 0.82                      |
+|    | Ensemble (#1 & 2)  | 0.92     | 0.85     |                     |                      |                   |                     | 0.78                      | 0.75                       | 0.81                    | 0.85                      |
+|    | **Ensemble (all)** | **0.93** | **0.85** |                     |                      |                   |                     | **0.79**                  | **0.75**                   | **0.83**                | **0.85**                  |
+|    |                    |          |          |                     |                      |                   |                     |                           |                            |                         |                           |
+|    | Naive Classifier   | 0.5      | -        | 0.0                 | 0.0                  | 0.0               |                     |                           |                            |                         |                           |
+|    | Random Classifier  | 0.5      | 0.34     | 0.32                | 0.32                 | 0.33              | 0.55                |                           |                            |                         |                           |
+|    | Vanilla Classifier |          |          |                     |                      |                   |                     |                           |                            |                         |                           |
 ---
 
 ## License
-Here’s a professional and well-structured **License & Citation** section for your README file that includes both the ISIC 2019 and ISIC 2020 datasets while ensuring proper attribution:  
-
----
-
-### License & Citation  
 
 This project uses the **ISIC 2019** and **ISIC 2020** Challenge Datasets, which are licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License (CC-BY-NC 4.0)**.  
 
