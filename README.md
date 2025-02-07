@@ -112,8 +112,10 @@ The model was trained by fine-tuning various deep learning architectures with pr
 - **DenseNet169**
 - **VGG-16**
 
-Image pre-processing was performed according to the requirements of each of the pre-trained models used. 
+For feature extraction the learning rate was set at 5e-5. In the fine-tuning phase a learning rate scheduler was used with a starting learning rate 5e-6 and exponential decay. 
+Dropout and L2 regularization were used to prevent overfitting and increase generalisation. 
 
+Image pre-processing was performed according to the requirements of each of the pre-trained models used.
 The models were trained on AWS's g4dn.4xlarge instance.
 
 ---
